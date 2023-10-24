@@ -66,7 +66,7 @@ Make the nuclear reactor quit with a failure using each of the four vulnerabilit
 
  1. Make the reactor program crash due to a buffer overflow corrupting the stack.
  2. Make the reactor fail due to an integer overflow / sign issue.
- 3. Read the `super` user password out of program memory using a format string vulnerability.
+ 3. Read the `super` user password out of program memory using a format string vulnerability. (The `super` user has a special privilege on the reactor that is especially dangerous.)
  4. Make the reactor fail due to an off-by-one error.
 
 ### remediation

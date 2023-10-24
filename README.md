@@ -42,7 +42,7 @@ There are many bugs in this program, but in particular there are four classic C-
 
 ### format string vulnerability
 
-A =[format string vulnerability](https://axcheron.github.io/exploit-101-format-strings/) happens with user input is used as the argument to a `printf` statement. Users are able to provide a `printf` format string (e.g., `"%s"`) that, when executed by `printf` will find parameters on the stack and print them out. (This is because `printf` can accept an arbitrary number of parameters. You can also specify the nth parameter you want by providing the format string `%N$s` where `N` is an integer. Some values of `N` might crash your program, but other values of `N` will reveal information present on the stack of the running program. Where are you able to provide a format string as input? You'll just have to figure that out.
+A [format string vulnerability](https://axcheron.github.io/exploit-101-format-strings/) happens with user input is used as the argument to a `printf` statement. Users are able to provide a `printf` format string (e.g., `"%s"`) that, when executed by `printf` will find parameters on the stack and print them out. (This is because `printf` can accept an arbitrary number of parameters. You can also specify the nth parameter you want by providing the format string `%N$s` where `N` is an integer. Some values of `N` might crash your program, but other values of `N` will reveal information present on the stack of the running program. Where are you able to provide a format string as input? You'll just have to figure that out.
 
 ### off-by-one
 

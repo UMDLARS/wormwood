@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #define MAX_SAFE_DEPTH 16
-#define MAX_FLOW_RATE 100
+#define MAX_FLOW_RATE 100.0
 #define TRUE 1
 #define FALSE 0
 
@@ -391,7 +391,7 @@ void reactor_status()
 
 	if (fail == 1)
 	{
-		return;
+		exit(-1);
 	}
 
 

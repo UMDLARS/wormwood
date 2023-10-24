@@ -1,2 +1,17 @@
 # wormwood
-an exercise exploring buffer overflow, off-by-one, integer overflow, and string format vulnerabilities in the context of a nuclear reactor.
+A nuclear reactor "simulator" exploring four major problems in C programs:
+
+ 1. buffer overflow
+ 1. off-by-one errors
+ 1. integer overflow / underflow
+ 1. string format vulnerabilities
+
+## quickstart
+
+ 1. Clone this repository onto a Linux machine.
+ 1. `cd` into the repository
+ 1. Execute `./run.sh`
+
+Try to make the reactor fail using each of the four vulnerabilities.
+
+

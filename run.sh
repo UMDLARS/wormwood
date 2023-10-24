@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+if ! gcc --version &> /dev/null
+then
+	echo "GCC does not appear to be installed."
+	echo "Try 'sudo apt install gcc'"
+	exit 0
+fi
+
 if gcc -O0 wormwood.c -o wormwood &> /dev/null
 then
 

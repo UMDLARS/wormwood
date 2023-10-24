@@ -15,7 +15,7 @@ The "simulation" (which is not even remotely accurate) has many issues, but you 
 
 This tool is a C program that can run on any Linux system. It does not require any privileges.
 
- 1. Clone this repository onto a Linux machine.
+ 1. Clone this repository onto a Linux machine. (For Fall'23 Computer Security, start a `posix` lab on Merge, log into `posix`, and do your work there.)
  1. `cd` into the repository
  1. Execute `./run.sh`
  1. Log in as the `oper` user with the password `HomerSimpson`
@@ -30,7 +30,7 @@ Reactors can fail in several catastrophic ways. One way they can fail is if the 
 
 ## how does this reactor control program work?
 
-When started, the reactor operator is required to log in as an operator (`oper`), or as a supervisor (`super`). The password for the `oper` user is `HomerSimpson`. The password for `super` is present in the sourcecode to `wormwood.c`. The operator can change the depth of the control rods or the flow rate of the coolant. This changes the temperature of the coolant and reactor. This (completely pretend) reactor is designed to function ideally between 1000 and 2000 degrees.
+When started, the reactor operator is required to log in as an operator (`oper`), or as a supervisor (`super`). The password for the `oper` user is `HomerSimpson`. (The password for `super` is present in the sourcecode to `wormwood.c`, but of course an operator would not know this.) The operator can change the depth of the control rods or the flow rate of the coolant. This changes the temperature of the coolant and reactor. This (completely pretend) reactor is designed to function ideally between 1000 and 2000 degrees.
 
 The reactor has a safety feature: if the temperature of the reactor rises above 2,000 degrees, it will automatically insert the control rods and increase the coolant flow rate until the temperature dips below 2,000. 
 

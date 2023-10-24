@@ -345,6 +345,15 @@ void update_reactor()
 		{
 			rod_depth++; /* automatically increment rod_depth to cool reactor */
 		}
+		printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
+		if (coolant_flow <= MAX_FLOW_RATE)
+		{
+			coolant_flow = coolant_flow + 10;
+			if (coolant_flow > MAX_FLOW_RATE) {
+				coolant_flow = MAX_FLOW_RATE;
+			}
+		}
+
 
 	}
 

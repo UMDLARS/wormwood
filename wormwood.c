@@ -67,31 +67,34 @@ void chomp(char *string)
 	string[strlen(string) - 1] = '\0';
 }
 
-void auth_user()
+void get_string(char *dest)
 {
 	int max_buf = 8192;
 	char input_buffer[max_buf];
+	fgets(input_buffer, max_buf, stdin);
+	strcpy(dest, input_buffer);
+	chomp(dest);
+
+}
+
+
+void auth_user()
+{
 	char user_user[16];
 	char user_pass[16];
-	char format_string[32];
 	int userid = 0;
 	char *passes[] = {"NA", "HomerSimpson", "Artemisia1986"};
 
 	/* get username and put into user_user */
 	printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
     printf("Which role (%s or %s)?: ", users[1], users[2]);
-
-	fgets(input_buffer, max_buf, stdin);
-	strcpy(user_user, input_buffer);
-	chomp(user_user);
+	get_string(user_user);
 
 	printf("Password for user '");
 	printf(user_user);
 	printf("': ");
 
-	fgets(input_buffer, max_buf, stdin);
-	strcpy(user_pass, input_buffer);
-	chomp(user_pass);
+	get_string(user_pass);
 
 	/* check to see if the password strings match */
 	/* if so, then set the usermode accordingly */
@@ -370,13 +373,10 @@ void update_reactor()
 void reactor_status()
 {
 
-	char input[256];
-	memset(input, '\0', 256);
-	char depth_hist[256];
+	char depth_hist[32];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
-	char timestring[256];
-	memset(timestring, '\0', 256);
+	char timestring[64];
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH)

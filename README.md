@@ -1,5 +1,5 @@
 # wormwood
-It would be a really bad idea to write control software for a nuclear reactor in the C language.
+It would be a really bad idea to write control software for a nuclear reactor in the C language. What if someone did?
 
 ## introduction
 Wormwood is n nuclear reactor "simulator" exploring four major problems in C programs:

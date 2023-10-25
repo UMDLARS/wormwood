@@ -2,7 +2,7 @@
 It would be a really bad idea to write control software for a nuclear reactor in the C language. What if someone did?
 
 ## introduction
-Wormwood is n nuclear reactor "simulator" exploring four major problems in C programs:
+Wormwood is a nuclear reactor "simulator" exploring four major problems in C programs:
 
  1. buffer overflow -- when more bytes are put into a buffer than the buffer has space for
  1. off-by-one errors -- when a counting or inequality issue results in a arithmetic mistake of 1

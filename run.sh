@@ -19,5 +19,8 @@ then
 		echo "... and a safer language than C ..."
 	fi
 
+else
+	echo "wormwood.c failed to compile."
+	exit 1
 fi
 

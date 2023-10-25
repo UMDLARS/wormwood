@@ -4,6 +4,9 @@
 #include <time.h>
 #include <ctype.h>
 
+#define DEBUG 0
+#define FUNCNAME if (DEBUG) printf("In %s @ line %d...\n", __func__, __LINE__);
+
 #define MAX_SAFE_DEPTH 16
 #define MAX_FLOW_RATE 100.0
 #define TRUE 1
@@ -69,19 +72,40 @@ void chomp(char *string)
 
 void get_string(char *dest)
 {
-	int max_buf = 8192;
-	char input_buffer[max_buf];
-	fgets(input_buffer, max_buf, stdin);
+	char input_buffer[8192];
+	fgets(input_buffer, 8192, stdin);
 	strcpy(dest, input_buffer);
 	chomp(dest);
 
 }
 
+void print_sparks()
+{
+	int i = 500;
+	int j = 0;
+	printf("\n");
+	while (i > 0) {
+		for (j = (rand() % 10); j > 0; j--) {
+
+			printf(" ");
+			i--;
+
+		}
+		printf("*");
+		i--;
+	}
+
+	printf("\n");
+
+}
 
 void auth_user()
 {
-	char user_user[16];
-	char user_pass[16];
+
+	FUNCNAME
+
+	char user_user[32];
+	char user_pass[32];
 	int userid = 0;
 	char *passes[] = {"NA", "HomerSimpson", "Artemisia1986"};
 
@@ -120,6 +144,8 @@ void auth_user()
 
 	}
 
+
+	usermode = 2;
 	return;
 
 }
@@ -149,7 +175,11 @@ void print_menu()
 		if (usermode == 2) 
 		{
 			/* we are in supervisor mode */
-			printf("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
+			if (safety_enabled == TRUE) {
+				printf("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
+			} else {
+				printf("(E) - Enable automatic safety control (* SUPER ONLY *)\n");
+			}
 
 		}
 
@@ -170,6 +200,7 @@ void set_rod_depth()
 	fgets(answer, 256, stdin);
 	new = atoi(answer);
 
+	printf("new: %d\n", new);
 	if (new <= MAX_SAFE_DEPTH) {
 		rod_depth = new;
 	} else {
@@ -207,12 +238,12 @@ void get_and_do_choice()
 {
 	char choice_string[256];
 	char choice;
-	printf("Enter your selection (ARFDL) and then press ENTER.\n");
+	printf("Enter your selection (ARFDEL) and then press ENTER.\n");
 
 	fgets(choice_string, 256, stdin);
 	choice = tolower(choice_string[0]);
 
-	printf("Your choice was: '%c'\n", choice);
+	//printf("Your choice was: '%c'\n", choice);
 
 	switch(choice) {
 
@@ -240,15 +271,27 @@ void get_and_do_choice()
 			printf("\n\n***** SAFETY PROTOCOLS DISABLED!!! *****\n\n");
 			break;
 
+		case 'e':
+
+			safety_enabled = TRUE;
+			printf("\n\n***** SAFETY PROTOCOLS ENABLED!!! *****\n\n");
+			break;
+
+
 		case 'l':
+
+			printf("Deauthenticating.\n");
+			usermode = 0;
 			
 			break;
 
 		default:
 
-			printf("Invalid option.\n");
+			printf("Doing nothing...\n");
 
 	}
+
+	return;
 	
 }
 
@@ -282,6 +325,7 @@ int rand_sign()
 
 void update_reactor()
 {
+	FUNCNAME
 
 	/* DO NOT UPDATE THIS CODE */
 
@@ -293,6 +337,7 @@ void update_reactor()
 	 */
 	
 
+	/* WARNINGS */
 	if (reactor_temp > 3000)
 	{
 		printf("\n\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n\n");
@@ -306,25 +351,32 @@ void update_reactor()
 
 	if (reactor_temp >= 5000)
 	{
+		print_sparks();
 		printf("\n\n****** COOLANT VAPORIZATION *******\n\n");
 		printf("\n\n****** CONTAINMENT VESSEL VENTING *******\n\n");
 		printf("\n\n****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
+		print_sparks();
 		fail = 1;
 	}
 
-
-
+	/* COOLANT FLOW HEAT REDUCTION */
 	/* coolant flow reduces reactor temp */
 	if (reactor_temp > 70) {
-		reactor_temp = reactor_temp - ((coolant_flow * float_up_to(15)));
+		reactor_temp = reactor_temp - ((coolant_flow * float_up_to(7)));
 	}
 
+	/* coolant temp follows the reactor temp, but at a delay */
+	coolant_temp = coolant_temp + ((reactor_temp - coolant_temp) * .15);
+
+	/* reactor cannot get below room temp */
 	if (reactor_temp < 70) {
 		reactor_temp = 70;
 	}
 
+	/* fuzz the reactor temp a bit for realism */
 	reactor_temp = reactor_temp + get_fuzz() * rand_sign();
 
+	/* RETRACTING THE RODS INCREASES THE TEMP */
 	/* for each unit the rod is not fully extracted, add a random float up to 50 */
 	float bump = 0;
 	int i;
@@ -334,11 +386,10 @@ void update_reactor()
 	{
 		bump = bump + float_up_to(20);
 	}
-	//printf("reactor temp increasing by: %f (factor: %d)\n", bump, rod_factor); 
 	reactor_temp = reactor_temp + bump;
 
-	/* coolant temp follows the reactor temp, but at a delay */
-	coolant_temp = coolant_temp + ((reactor_temp - coolant_temp) * .33);
+
+	/* SAFETY PROTOCOLS */
 
 	if (safety_enabled == TRUE && reactor_temp > 2000)
 	{
@@ -351,7 +402,7 @@ void update_reactor()
 		printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
 		if (coolant_flow <= MAX_FLOW_RATE)
 		{
-			coolant_flow = coolant_flow + 10;
+			coolant_flow = coolant_flow + 1;
 			if (coolant_flow > MAX_FLOW_RATE) {
 				coolant_flow = MAX_FLOW_RATE;
 			}
@@ -366,25 +417,32 @@ void update_reactor()
 		printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
 	}
 
-
-
 }
 
 void reactor_status()
 {
 
-	char depth_hist[32];
+	FUNCNAME
+
+	char depth_hist[256];
+	char *safetystring = "[ENABLED]";
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 	char timestring[64];
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
+	if (safety_enabled == 0) {
+		safetystring = "<<<DISABLED>>>";
+	}
+
 	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH)
 	{
+		print_sparks();
 		printf("WARNING! WARNING! WARNING!\n");
 		printf("CONTAINMENT VESSEL RUPTURE!\n");
 		printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
 	    printf("RADIATION LEAK - EVACUATE THE AREA!\n");
+		print_sparks();
 		fail = 1;
 	}
 
@@ -392,10 +450,11 @@ void reactor_status()
 	printf("+------------------------------------------------------------------------+\n");
 	printf("| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
 	printf("+------------------------------------------------------------------------+\n");
-	printf("| reactor temp: %04.2f              coolant_temp: %04.2f                 |\n", reactor_temp, coolant_temp); 
-	printf("| rod_depth: %d --[ %s ]--  coolant flow rate: %03.2f |\n", 
-		   rod_depth, draw_rod_depth(rod_depth, depth_hist), coolant_flow); 
+	printf("| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
+	printf("| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, draw_rod_depth(rod_depth, depth_hist), coolant_flow); 
 	printf("| User: %-10s                                                       |\n", users[usermode]);
+	printf("+------------------------------------------------------------------------+\n");
+	printf("| SAFETY PROTOCOLS: %14s                                       |\n", safetystring);
 	printf("+------------------------------------------------------------------------+\n");
 
 	if (fail == 1)

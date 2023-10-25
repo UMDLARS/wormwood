@@ -16,6 +16,7 @@ The "simulation" (which is not even remotely accurate) has many issues, but you 
 This tool is a C program that can run on any Linux system. It does not require any privileges.
 
  1. Clone this repository onto a Linux machine. (For Fall'23 Computer Security, start a `posix` lab on Merge, log into `posix`, and do your work there.)
+ 1. Install `gcc` if necessary (on Ubuntu/Debian: `apt update && apt install gcc`)
  1. `cd` into the repository
  1. Execute `./run.sh`
  1. Log in as the `oper` user with the password `HomerSimpson`

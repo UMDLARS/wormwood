@@ -6,7 +6,7 @@ Wormwood is n nuclear reactor "simulator" exploring four major problems in C pro
 
  1. buffer overflow -- when more bytes are put into a buffer than the buffer has space for
  1. off-by-one errors -- when a counting or inequality issue results in a arithmetic mistake of 1
- 1. integer overflow / underflow -- when the "wrapping" of an integer type causes something unexpected to happen
+ 1. integer overflow / underflow & sign -- when the "wrapping" of an integer type, or an incorrect sign causes something unexpected to happen
  1. string format vulnerabilities -- when a user is allowed to provide a format string to a `printf` statement.
 
 The "simulation" (which is not even remotely accurate) has many issues, but you can cause something bad to happen using each of the four vulnerabilities described above.

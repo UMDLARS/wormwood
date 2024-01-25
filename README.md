@@ -23,6 +23,26 @@ This tool is a C program that can run on any Linux system. It does not require a
 
 Without looking at the source code, try to make the reactor fail using each of the four vulnerabilities.
 
+## what does it look like?
+
+When running, the program displays a "dashboard" for a nuclear reactor control system. It looks like this:
+
+```
++------------------------------------------------------------------------+
+| JERICHO NUCLEAR REACTOR STATUS PANEL             (2024-01-25 12:18:35) |
++------------------------------------------------------------------------+
+| reactor temp:    70.00              coolant_temp:    70.00             |
+| rod_depth: 16 --[ [================] ]--  coolant flow rate: 10.00     |
+| User: NA                                                               |
++------------------------------------------------------------------------+
+| SAFETY PROTOCOLS:      [ENABLED]                                       |
++------------------------------------------------------------------------+
+Actions (choose one):
+(A) - Authenticate
+WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!
+Which role (oper or super)?: 
+```
+
 ## how do nuclear reactors work?
 
 In short, nuclear reactors have enough radioactive material in a small space (the "containment vessel") that the radiation can cause a chain reaction, resulting in a release of more radiation -- including heat. The heat is absorbed by a cooling system, which generates steam to drive electricity-generating turbines. In addition to a cooling system (with some rate of coolant flow), reactors have "control rods" that can be inserted between the pieces of radioactive fuel. Control rods are cylinders of material that -- depending on how far the rods are inserted into the containment vessel -- absorb some or most of the radiation. The further the rods are inserted, the less radiation and the less heat. The less they are inserted, the more radiation, the greater the chain reaction, and the more heat. If the rods are inserted all the way, the chain reaction stops.

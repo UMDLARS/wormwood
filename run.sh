@@ -17,7 +17,7 @@ fi
 if CMAKE_BUILD_TYPE=Debug cmake -B build -S .  &> /dev/null
 then
 
-	if ! ./wormwood
+	if ! ./build/wormwood
 	then
 		echo
 		echo

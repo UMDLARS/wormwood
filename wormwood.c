@@ -13,7 +13,13 @@
 #define TRUE 1
 #define FALSE 0
 
-int fail = 0;
+typedef enum {
+	exit_reason_none = 0,
+	exit_reason_fail,
+	exit_reason_quit,
+} exit_reason_t;
+
+exit_reason_t exit_reason = exit_reason_none;
 char rod_depth = 16;
 float coolant_flow = 10;
 float coolant_temp = 70.0;
@@ -25,7 +31,7 @@ int safety_active = 0;
 const char *users[] = {"NA", "oper", "super"};
 
 void wait_for_any_key() {
-	printw("Press any key to continue");
+	printw("Press any key to continue.");
 	refresh();
 	getch();
 }
@@ -163,25 +169,19 @@ void auth_user() {
 
 void print_menu() {
 	printw("Actions (choose one):\n");
-	if (usermode == 0) {
+
+	/* Print auth if we're not in supervisor mode. */
+	if (usermode != 2) {
 		printw("(A) - Authenticate\n");
-		return;
 	}
-	else {
-		/* We are authenticated in some way. */
-		if (usermode == 1 || usermode == 2)  {
-			/* We are a regular oper. */
-			if (usermode == 1) {
-				printw("(A) - Authenticate\n");
-			}
 
-			/* Print all normal oper options. */
-			printw("(R) - Set rod depth\n");
-			printw("(F) - Set coolant flow rate\n");
-		}
+	if (usermode != 0) {
+		/* Print all normal oper options. */
+		printw("(R) - Set rod depth\n");
+		printw("(F) - Set coolant flow rate\n");
 
-		if (usermode == 2) {
-			/* We are in supervisor mode. */
+		/* Allow enable/disable safety if we're in supervisor mode. */
+		if(usermode == 2) {
 			if (safety_enabled == TRUE) {
 				printw("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
 			} else {
@@ -195,7 +195,8 @@ void print_menu() {
 		printw("(?) - Any other choice - wait\n");
 	}
 
-	refresh();
+	/* Always print Quit. */
+	printw("(Q) - Quit\n");
 }
 
 void set_rod_depth() {
@@ -238,6 +239,7 @@ void set_flow_rate() {
 void get_and_do_choice() {
 	char choice_string[256];
 	printw("Enter your selection (ARFDEL) and then press ENTER.\n");
+	refresh();
 
 	char choice = getch();
 
@@ -267,6 +269,10 @@ void get_and_do_choice() {
 		case 'l':
 			printw("Deauthenticating.\n");
 			usermode = 0;
+			break;
+		case 'q':
+			printw("Quitting...\n");
+			exit_reason = exit_reason_quit;
 			break;
 		default:
 			printw("Doing nothing...\n");
@@ -326,9 +332,9 @@ void update_reactor() {
 		print_sparks();
 		printw("****** COOLANT VAPORIZATION *******\n");
 		printw("****** CONTAINMENT VESSEL VENTING *******\n");
-		printw("****** MAJOR RADIOACTIVITY LEAK!!! *******\n");
+		printw("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
 		print_sparks();
-		fail = 1;
+		exit_reason = exit_reason_fail;
 		return;
 	}
 
@@ -390,6 +396,10 @@ void reactor_status() {
 	/* Clear screen. */
 	clear_screen_print_status();
 
+	print_menu();
+	get_and_do_choice();
+	update_reactor();
+
 	/* Check if rod depth is safe. */
 	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH) {
 		clear();
@@ -397,24 +407,10 @@ void reactor_status() {
 		printw("WARNING! WARNING! WARNING!\n");
 		printw("CONTAINMENT VESSEL RUPTURE!\n");
 		printw("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
-	    printw("RADIATION LEAK - EVACUATE THE AREA!\n");
+	    printw("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		print_sparks();
 		refresh();
-		fail = 1;
-	}
-
-	/* Exit on failure. */
-	if (fail == 1) {
-		return;
-	}
-
-	print_menu();
-	get_and_do_choice();
-	update_reactor();
-
-	/* Check for failure again. */
-	if (fail == 1) {
-		return;
+		exit_reason = exit_reason_fail;
 	}
 
 	wait_for_any_key();
@@ -432,16 +428,18 @@ int main(int argc, char *argv[]) {
 
 	while (1) {
 		reactor_status();
-		if (fail == 1) {
-			/* Wait for key press. */
-			getch();
-
-			/* Close ncurses window. */
-			endwin();
-			return -1;
+		if (exit_reason != exit_reason_none) {
+			break;
 		}
 	}
 
+	/* Close ncurses window. */
 	endwin();
+
+	/* Return -1 on failure. */
+	if(exit_reason == exit_reason_fail) {
+		return -1;
+	}
+
 	return 0;
 }

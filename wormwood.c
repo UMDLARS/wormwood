@@ -3,9 +3,10 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include <ncurses.h>
 
 #define DEBUG 0
-#define FUNCNAME if (DEBUG) printf("In %s @ line %d...\n", __func__, __LINE__);
+#define FUNCNAME if (DEBUG) printw("In %s @ line %d...\n", __func__, __LINE__);
 
 #define MAX_SAFE_DEPTH 16
 #define MAX_FLOW_RATE 100.0
@@ -22,6 +23,14 @@ int safety_enabled = TRUE;
 int safety_active = 0;
 
 const char *users[] = {"NA", "oper", "super"};
+
+
+void wait_for_any_key()
+{
+	printw("Press any key to continue");
+	refresh();
+	getch();
+}
 
 char *draw_rod_depth(char rod_depth, char *depth_hist)
 {
@@ -62,40 +71,59 @@ char *draw_rod_depth(char rod_depth, char *depth_hist)
 
 }
 
-void chomp(char *string)
-{
-	/* remove the newline from the end of the string */
-	/* we will actually overwrite the newline with a \0 */
+void clear_screen_print_status() {
+	char depth_hist[256];
 
-	string[strlen(string) - 1] = '\0';
+	/* Generate timestamp string. */
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	char timestring[64];
+	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	char *safetystring = "[ENABLED]";
+	if (safety_enabled == 0) {
+		safetystring = "<<<DISABLED>>>";
+	}
+
+	/* Clear screen first. */
+	clear();
+
+	/* Print status message. */
+	printw("+------------------------------------------------------------------------+\n");
+	printw("| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
+	printw("+------------------------------------------------------------------------+\n");
+	printw("| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
+	printw("| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, draw_rod_depth(rod_depth, depth_hist), coolant_flow); 
+	printw("| User: %-10s                                                       |\n", users[usermode]);
+	printw("+------------------------------------------------------------------------+\n");
+	printw("| SAFETY PROTOCOLS: %14s                                       |\n", safetystring);
+	printw("+------------------------------------------------------------------------+\n");
 }
 
 void get_string(char *dest)
 {
 	char input_buffer[8192];
-	fgets(input_buffer, 8192, stdin);
+	getstr(input_buffer); // create new vuln, do we want this?
 	strcpy(dest, input_buffer);
-	chomp(dest);
-
 }
 
 void print_sparks()
 {
 	int i = 500;
 	int j = 0;
-	printf("\n");
+	printw("\n");
 	while (i > 0) {
 		for (j = (rand() % 10); j > 0; j--) {
 
-			printf(" ");
+			printw(" ");
 			i--;
 
 		}
-		printf("*");
+		printw("*");
 		i--;
 	}
 
-	printf("\n");
+	printw("\n");
 
 }
 
@@ -110,13 +138,15 @@ void auth_user()
 	char *passes[] = {"NA", "HomerSimpson", "Artemisia1986"};
 
 	/* get username and put into user_user */
-	printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
-    printf("Which role (%s or %s)?: ", users[1], users[2]);
+	printw("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
+    printw("Which role (%s or %s)?: ", users[1], users[2]);
+	refresh();
 	get_string(user_user);
 
-	printf("Password for user '");
-	printf(user_user);
-	printf("': ");
+	printw("Password for user '");
+	printw(user_user);
+	printw("': ");
+	refresh();
 
 	get_string(user_pass);
 
@@ -130,20 +160,19 @@ void auth_user()
 	{
 		userid = 2;
 	} else {
-		printf("AUTHENTICATION FAILED (no such user)\n");
+		printw("AUTHENTICATION FAILED (no such user)\n");
 		usermode = 0;
 		return;
 	}
 
 	if (strcmp(user_pass, passes[userid]) == 0)
 	{
-		printf("User '%s' AUTHENTICATED!\n", users[userid]);
+		printw("User '%s' AUTHENTICATED!\n", users[userid]);
 		usermode = userid; /* switch to oper or super mode */
 	} else {
-		printf("AUTHENTICATION FAILED (incorrect password)\n");
+		printw("AUTHENTICATION FAILED (incorrect password)\n");
 
 	}
-
 
 	usermode = 2;
 	return;
@@ -152,11 +181,9 @@ void auth_user()
 
 void print_menu()
 {
-	printf("Actions (choose one):\n");
+	printw("Actions (choose one):\n");
 	if (usermode == 0) {
-		printf("(A) - Authenticate\n");
-		auth_user();
-		print_menu();
+		printw("(A) - Authenticate\n");
 		return;
 	} else {
 		/* we are authenticated in some way */
@@ -164,86 +191,85 @@ void print_menu()
 		{
 			/* we are a regular oper */
 			if (usermode == 1) {
-				printf("(A) - Authenticate\n");
+				printw("(A) - Authenticate\n");
 			}
 
 			/* print all normal oper options */
-			printf("(R) - Set rod depth\n");
-			printf("(F) - Set coolant flow rate\n");
+			printw("(R) - Set rod depth\n");
+			printw("(F) - Set coolant flow rate\n");
 		}
 
 		if (usermode == 2) 
 		{
 			/* we are in supervisor mode */
 			if (safety_enabled == TRUE) {
-				printf("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
+				printw("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
 			} else {
-				printf("(E) - Enable automatic safety control (* SUPER ONLY *)\n");
+				printw("(E) - Enable automatic safety control (* SUPER ONLY *)\n");
 			}
 
 		}
 
 		/* if authenticated, provide option to log out */
-		printf("(L) - Log out\n");
+		printw("(L) - Log out\n");
 
-		printf("(?) - Any other choice - wait\n");
+		printw("(?) - Any other choice - wait\n");
 
 	}
 
+	refresh();
 }
 
 void set_rod_depth()
 {
 	int new = 0;
 	char answer[256];
-	printf("What should the new rod depth be (0-16) [current: %d]?: ", rod_depth);
-	fgets(answer, 256, stdin);
+	printw("What should the new rod depth be (0-16) [current: %d]?: ", rod_depth);
+	refresh();
+	get_string(answer);
 	new = atoi(answer);
 
-	printf("new: %d\n", new);
+	printw("new: %d\n", new);
 	if (new <= MAX_SAFE_DEPTH) {
 		rod_depth = new;
 	} else {
-		printf("New depth value %d is greater than %d -- ignoring!", new, MAX_SAFE_DEPTH);
+		printw("New depth value %d is greater than %d -- ignoring!", new, MAX_SAFE_DEPTH);
 	}
-
-
 }
 
 void set_flow_rate()
 {
 	float new = 0;
 	char answer[256];
-	printf("What should the new flow rate be (0.0-100.0) [current: %03.2f]?: ", coolant_flow);
-	fgets(answer, 256, stdin);
+	printw("What should the new flow rate be (0.0-100.0) [current: %03.2f]?: ", coolant_flow);
+	get_string(answer);
 	new = atof(answer);
 
 	if (new > MAX_FLOW_RATE) {
-		printf("New flow rate (%03.2f) is greater than max %03.2f -- ignoring!\n", new, MAX_FLOW_RATE);
+		printw("New flow rate (%03.2f) is greater than max %03.2f -- ignoring!\n", new, MAX_FLOW_RATE);
 	}
 
 	if (new < 10 && usermode < 2) 
 	{
-		printf("User 'oper' cannot set flow rate below 10! -- ignoring!\n");
+		printw("User 'oper' cannot set flow rate below 10! -- ignoring!\n");
 	} else {
 
-		printf("New coolant flow rate: %03.2f (was: %03.2f)\n", new, coolant_flow);
+		printw("New coolant flow rate: %03.2f (was: %03.2f)\n", new, coolant_flow);
 		coolant_flow = new;
 	}
-
 }
-
 
 void get_and_do_choice()
 {
 	char choice_string[256];
-	char choice;
-	printf("Enter your selection (ARFDEL) and then press ENTER.\n");
+	printw("Enter your selection (ARFDEL) and then press ENTER.\n");
 
-	fgets(choice_string, 256, stdin);
-	choice = tolower(choice_string[0]);
+	char choice = getch();
 
-	//printf("Your choice was: '%c'\n", choice);
+	/* Clear screen after the user enters an option. */
+	clear_screen_print_status();
+
+	//printw("Your choice was: '%c'\n", choice);
 
 	switch(choice) {
 
@@ -268,26 +294,26 @@ void get_and_do_choice()
 		case 'd':
 
 			safety_enabled = FALSE;
-			printf("\n\n***** SAFETY PROTOCOLS DISABLED!!! *****\n\n");
+			printw("***** SAFETY PROTOCOLS DISABLED!!! *****\n");
 			break;
 
 		case 'e':
 
 			safety_enabled = TRUE;
-			printf("\n\n***** SAFETY PROTOCOLS ENABLED!!! *****\n\n");
+			printw("***** SAFETY PROTOCOLS ENABLED!!! *****\n");
 			break;
 
 
 		case 'l':
 
-			printf("Deauthenticating.\n");
+			printw("Deauthenticating.\n");
 			usermode = 0;
 			
 			break;
 
 		default:
 
-			printf("Doing nothing...\n");
+			printw("Doing nothing...\n");
 
 	}
 
@@ -340,23 +366,24 @@ void update_reactor()
 	/* WARNINGS */
 	if (reactor_temp > 3000)
 	{
-		printf("\n\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n\n");
-	}
-
-	if (reactor_temp > 4000)
-	{
-		printf("\n\n***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n\n");
+		printw("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
+		if(reactor_temp > 4000) {
+			printw("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
+		}
+		printw("\n");
 	}
 
 
 	if (reactor_temp >= 5000)
 	{
+		clear();
 		print_sparks();
-		printf("\n\n****** COOLANT VAPORIZATION *******\n\n");
-		printf("\n\n****** CONTAINMENT VESSEL VENTING *******\n\n");
-		printf("\n\n****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
+		printw("****** COOLANT VAPORIZATION *******\n");
+		printw("****** CONTAINMENT VESSEL VENTING *******\n");
+		printw("****** MAJOR RADIOACTIVITY LEAK!!! *******\n");
 		print_sparks();
 		fail = 1;
+		return;
 	}
 
 	/* COOLANT FLOW HEAT REDUCTION */
@@ -394,12 +421,12 @@ void update_reactor()
 	if (safety_enabled == TRUE && reactor_temp > 2000)
 	{
 		safety_active = 1;
-		printf("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
+		printw("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
 		if (rod_depth <= MAX_SAFE_DEPTH)
 		{
 			rod_depth++; /* automatically increment rod_depth to cool reactor */
 		}
-		printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
+		printw("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
 		if (coolant_flow <= MAX_FLOW_RATE)
 		{
 			coolant_flow = coolant_flow + 1;
@@ -407,65 +434,53 @@ void update_reactor()
 				coolant_flow = MAX_FLOW_RATE;
 			}
 		}
-
-
 	}
 
 	if (safety_active == 1 && reactor_temp < 2000)
 	{
 		safety_active = 0;
-		printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
+		printw("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
 	}
 
 }
 
 void reactor_status()
 {
-
 	FUNCNAME
 
-	char depth_hist[256];
-	char *safetystring = "[ENABLED]";
-	time_t t = time(NULL);
-	struct tm tm = *localtime(&t);
-	char timestring[64];
-	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	/* Clear screen. */
+	clear_screen_print_status();
 
-	if (safety_enabled == 0) {
-		safetystring = "<<<DISABLED>>>";
-	}
-
+	/* Check if rod depth is safe. */
 	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH)
 	{
+		clear();
 		print_sparks();
-		printf("WARNING! WARNING! WARNING!\n");
-		printf("CONTAINMENT VESSEL RUPTURE!\n");
-		printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
-	    printf("RADIATION LEAK - EVACUATE THE AREA!\n");
+		printw("WARNING! WARNING! WARNING!\n");
+		printw("CONTAINMENT VESSEL RUPTURE!\n");
+		printw("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
+	    printw("RADIATION LEAK - EVACUATE THE AREA!\n");
 		print_sparks();
+		refresh();
 		fail = 1;
 	}
 
-
-	printf("+------------------------------------------------------------------------+\n");
-	printf("| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
-	printf("+------------------------------------------------------------------------+\n");
-	printf("| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
-	printf("| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, draw_rod_depth(rod_depth, depth_hist), coolant_flow); 
-	printf("| User: %-10s                                                       |\n", users[usermode]);
-	printf("+------------------------------------------------------------------------+\n");
-	printf("| SAFETY PROTOCOLS: %14s                                       |\n", safetystring);
-	printf("+------------------------------------------------------------------------+\n");
-
+	/* Exit on failure. */
 	if (fail == 1)
 	{
-		exit(-1);
+		return;
 	}
-
 
 	print_menu();
 	get_and_do_choice();
 	update_reactor();
+
+	/* Check for failure again. */
+	if (fail == 1) {
+		return;
+	}
+
+	wait_for_any_key();
 
 	return;
 }
@@ -474,6 +489,10 @@ void reactor_status()
 int main(int argc, char *argv[]) 
 {
 
+	/* Initialize ncurses. */
+	initscr();
+
+	/* Seed RNG with time. */
 	srand(time(NULL));
 
 	while (1)
@@ -481,11 +500,17 @@ int main(int argc, char *argv[])
 		reactor_status();
 		if (fail == 1)
 		{
-			break;
+			/* Wait for key press. */
+			getch();
+
+			/* Close ncurses window. */
+			endwin();
+			return -1;
 		}
 
 	}
 
+	endwin();
 	return 0;
 }
 

@@ -7,7 +7,7 @@ then
 	exit 0
 fi
 
-if gcc -O0 wormwood.c -o wormwood &> /dev/null
+if gcc -O0 -lcurses wormwood.c -o wormwood &> /dev/null
 then
 
 	if ! ./wormwood

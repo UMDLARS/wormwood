@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <time.h>
 #include <ctype.h>
 #include <ncurses.h>
@@ -10,8 +11,6 @@
 
 #define MAX_SAFE_DEPTH 16
 #define MAX_FLOW_RATE 100.0
-#define TRUE 1
-#define FALSE 0
 
 typedef enum {
 	exit_reason_none = 0,
@@ -25,8 +24,8 @@ float coolant_flow = 10;
 float coolant_temp = 70.0;
 float reactor_temp = 70.0;
 int usermode = 0;
-int safety_enabled = TRUE;
-int safety_active = 0;
+bool safety_enabled = true;
+bool safety_active = false;
 
 const char *users[] = {"NA", "oper", "super"};
 
@@ -182,7 +181,7 @@ void print_menu() {
 
 		/* Allow enable/disable safety if we're in supervisor mode. */
 		if(usermode == 2) {
-			if (safety_enabled == TRUE) {
+			if (safety_enabled == true) {
 				printw("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
 			} else {
 				printw("(E) - Enable automatic safety control (* SUPER ONLY *)\n");
@@ -259,11 +258,11 @@ void get_and_do_choice() {
 			set_flow_rate();
 			break;
 		case 'd':
-			safety_enabled = FALSE;
+			safety_enabled = false;
 			printw("***** SAFETY PROTOCOLS DISABLED!!! *****\n");
 			break;
 		case 'e':
-			safety_enabled = TRUE;
+			safety_enabled = true;
 			printw("***** SAFETY PROTOCOLS ENABLED!!! *****\n");
 			break;
 		case 'l':
@@ -367,7 +366,7 @@ void update_reactor() {
 	reactor_temp = reactor_temp + bump;
 
 	/* SAFETY PROTOCOLS */
-	if (safety_enabled == TRUE && reactor_temp > 2000) {
+	if (safety_enabled == true && reactor_temp > 2000) {
 		safety_active = 1;
 		printw("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
 		if (rod_depth <= MAX_SAFE_DEPTH) {

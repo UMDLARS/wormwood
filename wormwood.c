@@ -160,7 +160,7 @@ void set_flow_rate(void) {
 void get_and_do_choice(void) {
 	char choice_string[256];
 
-	console_printf("Enter your selection (ARFDEL) and then press ENTER.\n");
+	console_printf("Enter your selection (ARFDELQ) and then press ENTER.\n");
 	char choice = console_read_chr();
 
 	/* Clear console after the user enters an option. */

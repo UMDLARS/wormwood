@@ -11,6 +11,11 @@ static pthread_mutex_t g_status_mutex;
 
 static char g_depth_hist[256];
 
+static char* g_safety_string[] = {
+    "<<<DISABLED>>>",
+    "[ENABLED]",
+};
+
 static char *__draw_rod_depth(char rod_depth) {
 	int idx = 0;
 	int i;
@@ -73,11 +78,6 @@ void status_update(void) {
 	char timestring[64];
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-	char *safetystring = "[ENABLED]";
-	if (safety_enabled == 0) {
-		safetystring = "<<<DISABLED>>>";
-	}
-
 	/* Clear screen first. */
 	wclear(g_window);
 
@@ -89,7 +89,7 @@ void status_update(void) {
 	wprintw(g_window, "| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, __draw_rod_depth(rod_depth), coolant_flow); 
 	wprintw(g_window, "| User: %-10s                                                       |\n", users[usermode]);
 	wprintw(g_window, "+------------------------------------------------------------------------+\n");
-	wprintw(g_window, "| SAFETY PROTOCOLS: %14s                                       |\n", safetystring);
+	wprintw(g_window, "| SAFETY PROTOCOLS: %14s                                       |\n", g_safety_string[safety_enabled]);
 	wprintw(g_window, "+------------------------------------------------------------------------+\n");
 
     /* Update window. */

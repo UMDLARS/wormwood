@@ -161,7 +161,7 @@ void get_and_do_choice(void) {
 	char choice_string[256];
 
 	console_printf("Enter your selection (ARFDELQ) and then press ENTER.\n");
-	char choice = console_read_chr();
+	char choice = tolower(console_read_chr());
 
 	/* Clear console after the user enters an option. */
 	console_clear();

@@ -7,10 +7,17 @@ then
 	exit 0
 fi
 
-if gcc -O0 wormwood.c -o wormwood &> /dev/null
+if ! cmake --version &> /dev/null
+then
+	echo "CMake does not appear to be installed."
+	echo "Try 'sudo apt install cmake'"
+	exit 0
+fi
+
+if CMAKE_BUILD_TYPE=Debug cmake -B build -S . && cmake --build ./build
 then
 
-	if ! ./wormwood
+	if ! ./build/wormwood
 	then
 		echo
 		echo

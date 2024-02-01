@@ -188,13 +188,13 @@ void reactor_status(void) {
 	pthread_mutex_unlock(&g_reactor_mutex);
 
 	/* Update reactor if we aren't in realtime mode. */
-	if(!g_is_reactor_realtime) {
-		update_reactor();
+	if(!reactor_is_realtime()) {
+		reactor_update();
 	}
 
 	/* Process any reactor warnings. */
 	pthread_mutex_lock(&g_reactor_mutex);
-	process_reactor_warns();
+	reactor_process_warns();
 	pthread_mutex_unlock(&g_reactor_mutex);
 
 	console_wait_until_press();

@@ -3,11 +3,12 @@
 #include <pthread.h>
 
 extern pthread_mutex_t g_reactor_mutex;
-extern bool g_is_reactor_realtime;
 
-void update_reactor(void);
+void reactor_update(void);
 
-void process_reactor_warns(void);
+void reactor_process_warns(void);
 
-void start_periodic_reactor_update(void);
-void end_periodic_reactor_update(void);
+bool reactor_is_realtime(void);
+
+void reactor_start_realtime_update(void);
+void reactor_end_realtime_update(void);

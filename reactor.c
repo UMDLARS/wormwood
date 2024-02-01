@@ -6,7 +6,8 @@
 #include "common.h"
 
 pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
-bool g_is_reactor_realtime = false;
+
+static bool g_is_realtime = false;
 
 static const int g_realtime_update_rate = 2; // Seconds
 static bool g_realtime_active;
@@ -61,7 +62,7 @@ void* _realtime_reactor_loop(void*) {
     struct timespec timeout;
     bool done = false;
 
-    while(true) {
+    while(!done) {
         /* Get current time and add [g_realtime_update_rate] sec. */
         timespec_get(&timeout, TIME_UTC);
         timeout.tv_sec += g_realtime_update_rate;
@@ -74,7 +75,7 @@ void* _realtime_reactor_loop(void*) {
 
         /* Perform update if we're suppose to still be running, otherwise quit. */
         if(g_realtime_active) {
-            update_reactor();
+            reactor_update();
         }
         else {
             done = true;
@@ -86,7 +87,7 @@ void* _realtime_reactor_loop(void*) {
     return NULL;
 }
 
-void update_reactor(void) {
+void reactor_update(void) {
 	FUNCNAME
 
 	/* DO NOT UPDATE THIS CODE */
@@ -166,7 +167,7 @@ void update_reactor(void) {
     status_update();
 }
 
-void process_reactor_warns(void) {
+void reactor_process_warns(void) {
     /* Check if we've overheated. */
     if(g_warnings.temp_error) {
 		console_clear();
@@ -214,7 +215,9 @@ void process_reactor_warns(void) {
     }
 }
 
-void start_periodic_reactor_update(void) {
+bool reactor_is_realtime(void) { return g_is_realtime; }
+
+void reactor_start_realtime_update(void) {
     /* Set flag to enable updates. */
     g_realtime_active = true;
 
@@ -222,7 +225,7 @@ void start_periodic_reactor_update(void) {
     pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL);
 }
 
-void end_periodic_reactor_update(void) {
+void reactor_end_realtime_update(void) {
     /* Set flag to disable updates in thread. */
     pthread_mutex_lock(&g_reactor_mutex);
     g_realtime_active = false;

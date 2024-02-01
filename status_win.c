@@ -28,7 +28,7 @@ static pthread_cond_t g_flash_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t g_flash_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_flash_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static char *__draw_rod_depth(char rod_depth) {
+static char *_draw_rod_depth(char rod_depth) {
 	int idx = 0;
 	int i;
 	memset(g_depth_hist, '\0', 256);
@@ -62,14 +62,14 @@ static char *__draw_rod_depth(char rod_depth) {
 	return g_depth_hist;
 }
 
-static void __set_safety_state(int state) {
+static void _set_safety_state(int state) {
     /* Update safety text. */
     mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", g_safety_string[state]);
     wrefresh(g_window);
     console_reset_cursor();
 }
 
-static void* __safety_flash_updater(void*) {
+static void* _safety_flash_updater(void*) {
     struct timespec timeout;
     bool state = true;
     bool done = false;
@@ -86,7 +86,7 @@ static void* __safety_flash_updater(void*) {
 
         /* Toggle safety state if we're suppose to still be running, otherwise quit. */
         if(g_enable_flash) {
-            __set_safety_state(state ? 2 : 0);
+            _set_safety_state(state ? 2 : 0);
             state = !state;
         }
         else {
@@ -132,16 +132,16 @@ void status_update(void) {
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL             (%s)", timestring);
     mvwhline(g_window, 2, 1, 0, STATUS_WIN_W - 2);
 	mvwprintw(g_window, 3, 1, "reactor temp: %8.2f              coolant_temp: %8.2f", reactor_temp, coolant_temp); 
-	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", rod_depth, __draw_rod_depth(rod_depth), coolant_flow); 
+	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", rod_depth, draw_rod_depth(rod_depth), coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", users[usermode]);
     mvwhline(g_window, 6, 1, 0, STATUS_WIN_W - 2);
 
     /* If safety is disabled, the safety message should flash. */
     if(safety_enabled != g_last_safety_state) {
         if(!safety_enabled) {
-            __set_safety_state(0);
+            _set_safety_state(0);
             g_enable_flash = true;
-            pthread_create(&g_flash_thread, NULL, __safety_flash_updater, NULL);
+            pthread_create(&g_flash_thread, NULL, _safety_flash_updater, NULL);
         }
         else {
             if (g_enable_flash) {
@@ -154,7 +154,7 @@ void status_update(void) {
                 pthread_cond_signal(&g_flash_cond);
                 pthread_join(g_flash_thread, NULL);
             }
-            __set_safety_state(1);
+            _set_safety_state(1);
         }
 
         g_last_safety_state = safety_enabled;

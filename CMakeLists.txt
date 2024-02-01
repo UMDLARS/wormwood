@@ -10,12 +10,14 @@ pkg_check_modules(NCURSES REQUIRED ncurses)
 set(WW_HEADERS
     "common.h"
     "console_win.h"
+    "reactor.h"
     "status_win.h"
 )
 
 set(WW_SOURCES
     "common.c"
     "console_win.c"
+    "reactor.c"
     "status_win.c"
     "wormwood.c"
 )

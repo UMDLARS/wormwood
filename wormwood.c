@@ -183,9 +183,15 @@ void reactor_status(void) {
 	/* Clear console. */
 	console_clear();
 
+	/* Print menu and get/perform operation. */
 	print_menu();
 	get_and_do_choice();
+
+	/* Update reactor. */
 	update_reactor();
+
+	/* Process any reactor warnings. */
+	process_reactor_warns();
 
 	console_wait_until_press();
 

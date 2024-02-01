@@ -1,7 +1,17 @@
 #include "reactor.h"
 #include <stdlib.h>
+#include <stdint.h>
 #include "console_win.h"
 #include "common.h"
+
+static struct {
+    uint temp1 : 1;
+    uint temp2 : 1;
+    uint temp_error : 1;
+    uint safety_enable :1;
+    uint reach_norm : 1;
+    uint rupture : 1;
+} g_warnings;
 
 static float _float_up_to(int max) {
 	// https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c
@@ -53,22 +63,15 @@ void update_reactor(void) {
 
 	/* WARNINGS */
 	if (reactor_temp > 3000) {
-		console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
+		g_warnings.temp1 = true;
 		if(reactor_temp > 4000) {
-			console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
+			g_warnings.temp2 = true;
 		}
-		console_printf("\n");
 	}
 
 	/* Fail/throw error if reactor temp goes over 5K. */
 	if (reactor_temp >= 5000) {
-		console_clear();
-		_print_sparks();
-		console_printf("****** COOLANT VAPORIZATION *******\n");
-		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
-		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
-		_print_sparks();
-		exit_reason = exit_reason_fail;
+        g_warnings.temp_error = true;
 		return;
 	}
 
@@ -102,14 +105,13 @@ void update_reactor(void) {
 
 	/* SAFETY PROTOCOLS */
 	if (safety_enabled == true && reactor_temp > 2000) {
+        g_warnings.safety_enable = true;
 		safety_active = 1;
-		console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
 		if (rod_depth <= MAX_SAFE_DEPTH) {
 			/* Automatically increment rod_depth to cool reactor. */
 			rod_depth++;
 		}
 
-		console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
 		if (coolant_flow <= MAX_FLOW_RATE) {
 			coolant_flow = coolant_flow + 1;
 			if (coolant_flow > MAX_FLOW_RATE) {
@@ -119,12 +121,46 @@ void update_reactor(void) {
 	}
 
 	if (safety_active == 1 && reactor_temp < 2000) {
+        g_warnings.reach_norm = true;
 		safety_active = 0;
-		console_printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
 	}
 
 	/* Check if rod depth is safe. */
 	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH) {
+        g_warnings.rupture = true;
+	}
+}
+
+void process_reactor_warns(void) {
+    if(g_warnings.temp1) {
+        console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
+        if(g_warnings.temp2) {
+            console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
+        }
+        console_printf("\n");
+    }
+
+    if(g_warnings.temp_error) {
+		console_clear();
+		_print_sparks();
+		console_printf("****** COOLANT VAPORIZATION *******\n");
+		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
+		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
+		_print_sparks();
+		exit_reason = exit_reason_fail;
+        return;
+    }
+
+    if(g_warnings.safety_enable) {
+        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
+        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
+    }
+
+    if(g_warnings.reach_norm) {
+        console_printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
+    }
+
+    if(g_warnings.rupture) {
 		console_clear();
 		_print_sparks();
 		console_printf("WARNING! WARNING! WARNING!\n");
@@ -133,5 +169,13 @@ void update_reactor(void) {
 	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
 		exit_reason = exit_reason_fail;
-	}
+    }
+}
+
+void start_periodic_reactor_update(void) {
+
+}
+
+void end_periodic_reactor_update(void) {
+
 }

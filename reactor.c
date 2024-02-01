@@ -4,9 +4,8 @@
 #include "console_win.h"
 #include "common.h"
 
+
 static struct {
-    uint temp1 : 1;
-    uint temp2 : 1;
     uint temp_error : 1;
     uint safety_enable :1;
     uint reach_norm : 1;
@@ -61,14 +60,6 @@ void update_reactor(void) {
 	 * real danger or stakes. It's more engaging and interesting that way!
 	 */
 
-	/* WARNINGS */
-	if (reactor_temp > 3000) {
-		g_warnings.temp1 = true;
-		if(reactor_temp > 4000) {
-			g_warnings.temp2 = true;
-		}
-	}
-
 	/* Fail/throw error if reactor temp goes over 5K. */
 	if (reactor_temp >= 5000) {
         g_warnings.temp_error = true;
@@ -122,6 +113,7 @@ void update_reactor(void) {
 
 	if (safety_active == 1 && reactor_temp < 2000) {
         g_warnings.reach_norm = true;
+        g_warnings.safety_enable = false;
 		safety_active = 0;
 	}
 
@@ -132,14 +124,7 @@ void update_reactor(void) {
 }
 
 void process_reactor_warns(void) {
-    if(g_warnings.temp1) {
-        console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
-        if(g_warnings.temp2) {
-            console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
-        }
-        console_printf("\n");
-    }
-
+    /* Check if we've overheated. */
     if(g_warnings.temp_error) {
 		console_clear();
 		_print_sparks();
@@ -151,15 +136,7 @@ void process_reactor_warns(void) {
         return;
     }
 
-    if(g_warnings.safety_enable) {
-        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
-        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
-    }
-
-    if(g_warnings.reach_norm) {
-        console_printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
-    }
-
+    /* Check if a rupture has occurred. */
     if(g_warnings.rupture) {
 		console_clear();
 		_print_sparks();
@@ -169,6 +146,30 @@ void process_reactor_warns(void) {
 	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
 		exit_reason = exit_reason_fail;
+        return;
+    }
+
+    /* Check if temp is getting dangerously high. */
+	if (reactor_temp > 3000) {
+		console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
+		if(reactor_temp > 4000) {
+			console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
+		}
+        console_printf("\n");
+	}
+
+    /* Check if safety had to be enabled. */
+    if(g_warnings.safety_enable) {
+        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
+        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
+    }
+
+    /* Check if we've reached normal temps again. */
+    if(g_warnings.reach_norm) {
+        console_printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
+
+        /* We only need to print this once. */
+        g_warnings.reach_norm = false;
     }
 }
 

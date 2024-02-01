@@ -217,6 +217,11 @@ int main(int argc, char *argv[]) {
 	/* Perform initial status update. */
 	status_update();
 
+	/* Enable realtime mode if the first argument is "realtime". */
+	if(argc >= 2 && !strcmp(argv[1], "realtime")) {
+		reactor_set_realtime_enabled(true);
+	}
+
 	/* Start realtime reactor loop. */
 	if(reactor_is_realtime()) {
 		reactor_start_realtime_update();

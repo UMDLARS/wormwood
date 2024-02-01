@@ -221,6 +221,7 @@ void reactor_process_warns(void) {
     }
 }
 
+void reactor_set_realtime_enabled(bool enabled) { g_is_realtime = enabled; }
 bool reactor_is_realtime(void) { return g_is_realtime; }
 
 void reactor_start_realtime_update(void) {

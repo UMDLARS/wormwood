@@ -81,7 +81,7 @@ void* _realtime_reactor_loop(void*) {
             done = true;
         }
 
-        pthread_mutex_lock(&g_reactor_mutex);
+        pthread_mutex_unlock(&g_reactor_mutex);
     }
 
     return NULL;

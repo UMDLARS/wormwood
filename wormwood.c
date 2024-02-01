@@ -187,9 +187,12 @@ void reactor_status(void) {
 	process_choice(choice);
 	pthread_mutex_unlock(&g_reactor_mutex);
 
-	/* Update reactor if we aren't in realtime mode. */
+	/* Update reactor if we aren't in realtime mode, otherwise just update status. */
 	if(!reactor_is_realtime()) {
 		reactor_update();
+	}
+	else {
+		status_update();
 	}
 
 	/* Process any reactor warnings. */
@@ -212,6 +215,11 @@ int main(int argc, char *argv[]) {
 
 	/* Perform initial status update. */
 	status_update();
+
+	/* Start realtime reactor loop. */
+	if(reactor_is_realtime()) {
+		reactor_start_realtime_update();
+	}
 
 	/* Seed RNG with time. */
 	srand(time(NULL));

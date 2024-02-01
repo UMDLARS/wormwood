@@ -19,6 +19,8 @@ static char* g_safety_string[] = {
     "",
 };
 
+static bool g_last_safety_state = false; // default safety is true.
+
 static const int g_flash_rate = 1; // Seconds
 static bool g_enable_flash = false;
 static pthread_t g_flash_thread;
@@ -126,42 +128,42 @@ void status_update(void) {
 	char timestring[64];
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-	/* Clear screen first. */
-	wclear(g_window);
-
 	/* Print status message. */
-	wprintw(g_window, "+------------------------------------------------------------------------+\n");
-	wprintw(g_window, "| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
-	wprintw(g_window, "+------------------------------------------------------------------------+\n");
-	wprintw(g_window, "| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
-	wprintw(g_window, "| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, __draw_rod_depth(rod_depth), coolant_flow); 
-	wprintw(g_window, "| User: %-10s                                                       |\n", users[usermode]);
-	wprintw(g_window, "+------------------------------------------------------------------------+\n");
-	wprintw(g_window, "\n"); // Placeholder, see __set_safety_state.
-	wprintw(g_window, "+------------------------------------------------------------------------+\n");
+	mvwprintw(g_window, 0, 0, "+------------------------------------------------------------------------+\n");
+	mvwprintw(g_window, 1, 0, "| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
+	mvwprintw(g_window, 2, 0, "+------------------------------------------------------------------------+\n");
+	mvwprintw(g_window, 3, 0, "| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
+	mvwprintw(g_window, 4, 0, "| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, __draw_rod_depth(rod_depth), coolant_flow); 
+	mvwprintw(g_window, 5, 0, "| User: %-10s                                                       |\n", users[usermode]);
+	mvwprintw(g_window, 6, 0, "+------------------------------------------------------------------------+\n");
+	mvwprintw(g_window, 8, 0, "+------------------------------------------------------------------------+\n");
 
     /* If safety is disabled, the safety message should flash. */
-    if(!safety_enabled) {
-        __set_safety_state(0);
-        g_enable_flash = true;
-        pthread_create(&g_flash_thread, NULL, __safety_flash_updater, NULL);
-    }
-    else {
-        if (g_enable_flash) {
-            /* Set flag to disable flash. */
-            pthread_mutex_lock(&g_flash_mutex);
-            g_enable_flash = false;
-            pthread_mutex_unlock(&g_flash_mutex);
-
-            /* Try to signal thread. */
-            pthread_cond_signal(&g_flash_cond);
-            pthread_join(g_flash_thread, NULL);
+    if(safety_enabled != g_last_safety_state) {
+        if(!safety_enabled) {
+            __set_safety_state(0);
+            g_enable_flash = true;
+            pthread_create(&g_flash_thread, NULL, __safety_flash_updater, NULL);
         }
-        __set_safety_state(1);
+        else {
+            if (g_enable_flash) {
+                /* Set flag to disable flash. */
+                pthread_mutex_lock(&g_flash_mutex);
+                g_enable_flash = false;
+                pthread_mutex_unlock(&g_flash_mutex);
+
+                /* Try to signal thread. */
+                pthread_cond_signal(&g_flash_cond);
+                pthread_join(g_flash_thread, NULL);
+            }
+            __set_safety_state(1);
+        }
+
+        g_last_safety_state = safety_enabled;
     }
 
     /* Update window. */
-    //wrefresh(g_window);
+    wrefresh(g_window);
 
     pthread_mutex_unlock(&g_status_mutex);
 }

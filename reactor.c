@@ -1,9 +1,18 @@
 #include "reactor.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include "status_win.h"
 #include "console_win.h"
 #include "common.h"
 
+pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
+bool g_is_reactor_realtime = false;
+
+static const int g_realtime_update_rate = 2; // Seconds
+static bool g_realtime_active;
+static pthread_t g_realtime_thread;
+static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct {
     uint temp_error : 1;
@@ -48,6 +57,35 @@ static void _print_sparks(void) {
 	console_printf("\n");
 }
 
+void* _realtime_reactor_loop(void*) {
+    struct timespec timeout;
+    bool done = false;
+
+    while(true) {
+        /* Get current time and add [g_realtime_update_rate] sec. */
+        timespec_get(&timeout, TIME_UTC);
+        timeout.tv_sec += g_realtime_update_rate;
+
+        /* Wait until we're interrupted or X seconds pass. */
+        pthread_cond_timedwait(&g_realtime_cond, &g_realtime_cond_mutex, &timeout);
+
+        /* Aquire lock. */
+        pthread_mutex_lock(&g_reactor_mutex);
+
+        /* Perform update if we're suppose to still be running, otherwise quit. */
+        if(g_realtime_active) {
+            update_reactor();
+        }
+        else {
+            done = true;
+        }
+
+        pthread_mutex_lock(&g_reactor_mutex);
+    }
+
+    return NULL;
+}
+
 void update_reactor(void) {
 	FUNCNAME
 
@@ -63,6 +101,7 @@ void update_reactor(void) {
 	/* Fail/throw error if reactor temp goes over 5K. */
 	if (reactor_temp >= 5000) {
         g_warnings.temp_error = true;
+        exit_reason = exit_reason_fail;
 		return;
 	}
 
@@ -120,7 +159,11 @@ void update_reactor(void) {
 	/* Check if rod depth is safe. */
 	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH) {
         g_warnings.rupture = true;
+        exit_reason = exit_reason_fail;
 	}
+
+    /* Update status window. */
+    status_update();
 }
 
 void process_reactor_warns(void) {
@@ -132,7 +175,6 @@ void process_reactor_warns(void) {
 		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
 		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
 		_print_sparks();
-		exit_reason = exit_reason_fail;
         return;
     }
 
@@ -145,7 +187,6 @@ void process_reactor_warns(void) {
 		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
 	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
-		exit_reason = exit_reason_fail;
         return;
     }
 
@@ -174,9 +215,22 @@ void process_reactor_warns(void) {
 }
 
 void start_periodic_reactor_update(void) {
+    /* Set flag to enable updates. */
+    g_realtime_active = true;
 
+    /* Start thread. */
+    pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL);
 }
 
 void end_periodic_reactor_update(void) {
+    /* Set flag to disable updates in thread. */
+    pthread_mutex_lock(&g_reactor_mutex);
+    g_realtime_active = false;
+    pthread_mutex_unlock(&g_reactor_mutex);
 
+    /* Wake up thread. */
+    pthread_cond_signal(&g_realtime_cond);
+
+    /* Wait for thread to finish. */
+    pthread_join(g_realtime_thread, NULL);
 }

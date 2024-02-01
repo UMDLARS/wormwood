@@ -129,12 +129,7 @@ void set_flow_rate(void) {
 	}
 }
 
-void get_and_do_choice(void) {
-	char choice_string[256];
-
-	console_printf("Enter your selection (ARFDELQ) and then press ENTER.\n");
-	char choice = tolower(console_read_chr());
-
+void process_choice(char choice) {
 	/* Clear console after the user enters an option. */
 	console_clear();
 
@@ -177,21 +172,30 @@ void get_and_do_choice(void) {
 void reactor_status(void) {
 	FUNCNAME
 
-	/* Update status. */
-	status_update();
-
 	/* Clear console. */
 	console_clear();
 
 	/* Print menu and get/perform operation. */
 	print_menu();
-	get_and_do_choice();
 
-	/* Update reactor. */
-	update_reactor();
+	/* Read choice. */
+	console_printf("Enter your selection (ARFDELQ) and then press ENTER.\n");
+	char choice = tolower(console_read_chr());
+
+	/* Process choice. */
+	pthread_mutex_lock(&g_reactor_mutex);
+	process_choice(choice);
+	pthread_mutex_unlock(&g_reactor_mutex);
+
+	/* Update reactor if we aren't in realtime mode. */
+	if(!g_is_reactor_realtime) {
+		update_reactor();
+	}
 
 	/* Process any reactor warnings. */
+	pthread_mutex_lock(&g_reactor_mutex);
 	process_reactor_warns();
+	pthread_mutex_unlock(&g_reactor_mutex);
 
 	console_wait_until_press();
 
@@ -205,6 +209,9 @@ int main(int argc, char *argv[]) {
 	/* Initialize windows. */
 	status_init();
 	console_init();
+
+	/* Perform initial status update. */
+	status_update();
 
 	/* Seed RNG with time. */
 	srand(time(NULL));

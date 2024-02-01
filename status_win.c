@@ -64,8 +64,7 @@ static char *__draw_rod_depth(char rod_depth) {
 
 static void __set_safety_state(int state) {
     /* Update safety text. */
-    wmove(g_window, 7, 0);
-    wprintw(g_window, "| SAFETY PROTOCOLS: %14s                                       |\n", g_safety_string[state]);
+    mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", g_safety_string[state]);
     wrefresh(g_window);
     console_reset_cursor();
 }
@@ -106,6 +105,7 @@ void status_init(void) {
 
     /* Create our window. */
     g_window = newwin(STATUS_WIN_H, STATUS_WIN_W, STATUS_WIN_Y, STATUS_WIN_X);
+    box(g_window, 0, 0);
 }
 
 void status_end(void) {
@@ -129,14 +129,12 @@ void status_update(void) {
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	/* Print status message. */
-	mvwprintw(g_window, 0, 0, "+------------------------------------------------------------------------+\n");
-	mvwprintw(g_window, 1, 0, "| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
-	mvwprintw(g_window, 2, 0, "+------------------------------------------------------------------------+\n");
-	mvwprintw(g_window, 3, 0, "| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
-	mvwprintw(g_window, 4, 0, "| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, __draw_rod_depth(rod_depth), coolant_flow); 
-	mvwprintw(g_window, 5, 0, "| User: %-10s                                                       |\n", users[usermode]);
-	mvwprintw(g_window, 6, 0, "+------------------------------------------------------------------------+\n");
-	mvwprintw(g_window, 8, 0, "+------------------------------------------------------------------------+\n");
+	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL             (%s)", timestring);
+    mvwhline(g_window, 2, 1, 0, STATUS_WIN_W - 2);
+	mvwprintw(g_window, 3, 1, "reactor temp: %8.2f              coolant_temp: %8.2f", reactor_temp, coolant_temp); 
+	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", rod_depth, __draw_rod_depth(rod_depth), coolant_flow); 
+	mvwprintw(g_window, 5, 1, "User: %-10s", users[usermode]);
+    mvwhline(g_window, 6, 1, 0, STATUS_WIN_W - 2);
 
     /* If safety is disabled, the safety message should flash. */
     if(safety_enabled != g_last_safety_state) {

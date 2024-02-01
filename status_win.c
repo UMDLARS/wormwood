@@ -7,9 +7,11 @@
 #include <pthread.h>
 #include <unistd.h>
 
+static bool g_initialized = false;
+
 static WINDOW* g_window = NULL;
 
-static pthread_mutex_t g_status_mutex;
+static pthread_mutex_t g_status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char g_depth_hist[256];
 
@@ -69,7 +71,7 @@ static void _set_safety_state(int state) {
     console_reset_cursor();
 }
 
-static void* _safety_flash_updater(void*) {
+static void* _safety_flash_loop(void*) {
     struct timespec timeout;
     bool state = true;
     bool done = false;
@@ -99,9 +101,34 @@ static void* _safety_flash_updater(void*) {
     return NULL;
 }
 
+void _start_safety_flash(void) {
+    if(g_enable_flash) {
+        return;
+    }
+
+    g_enable_flash = true;
+    pthread_create(&g_flash_thread, NULL, _safety_flash_loop, NULL);
+}
+
+void _end_safety_flash(void) {
+    if(!g_enable_flash) {
+        return;
+    }
+
+    /* Set flag to disable flash. */
+    pthread_mutex_lock(&g_flash_mutex);
+    g_enable_flash = false;
+    pthread_mutex_unlock(&g_flash_mutex);
+
+    /* Try to signal thread. */
+    pthread_cond_signal(&g_flash_cond);
+    pthread_join(g_flash_thread, NULL);
+}
+
 void status_init(void) {
-    /* Init our mutex. */
-    pthread_mutex_init(&g_status_mutex, NULL);
+    if(g_initialized) {
+        return;
+    }
 
     /* Create our window. */
     g_window = newwin(STATUS_WIN_H, STATUS_WIN_W, STATUS_WIN_Y, STATUS_WIN_X);
@@ -109,8 +136,12 @@ void status_init(void) {
 }
 
 void status_end(void) {
-    /* Destroy our mutex. */
-    pthread_mutex_destroy(&g_status_mutex);
+    if(!g_initialized) {
+        return;
+    }
+
+    /* End safety flash. */
+    _end_safety_flash();
 
     /* Destroy our window. */
     delwin(g_window);
@@ -140,20 +171,10 @@ void status_update(void) {
     if(safety_enabled != g_last_safety_state) {
         if(!safety_enabled) {
             _set_safety_state(0);
-            g_enable_flash = true;
-            pthread_create(&g_flash_thread, NULL, _safety_flash_updater, NULL);
+            _start_safety_flash();
         }
         else {
-            if (g_enable_flash) {
-                /* Set flag to disable flash. */
-                pthread_mutex_lock(&g_flash_mutex);
-                g_enable_flash = false;
-                pthread_mutex_unlock(&g_flash_mutex);
-
-                /* Try to signal thread. */
-                pthread_cond_signal(&g_flash_cond);
-                pthread_join(g_flash_thread, NULL);
-            }
+            _end_safety_flash();
             _set_safety_state(1);
         }
 

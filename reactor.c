@@ -218,6 +218,10 @@ void reactor_process_warns(void) {
 bool reactor_is_realtime(void) { return g_is_realtime; }
 
 void reactor_start_realtime_update(void) {
+    if(g_realtime_active) {
+        return;
+    }
+
     /* Set flag to enable updates. */
     g_realtime_active = true;
 
@@ -226,6 +230,10 @@ void reactor_start_realtime_update(void) {
 }
 
 void reactor_end_realtime_update(void) {
+    if(!g_realtime_active) {
+        return;
+    }
+
     /* Set flag to disable updates in thread. */
     pthread_mutex_lock(&g_reactor_mutex);
     g_realtime_active = false;

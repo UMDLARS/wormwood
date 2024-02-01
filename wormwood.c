@@ -231,6 +231,13 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	/* End realtime reactor loop. */
+	reactor_end_realtime_update(); // noop if non-realtime.
+
+	/* Finalize windows. */
+	status_end();
+	console_end();
+
 	/* Close ncurses window. */
 	endwin();
 

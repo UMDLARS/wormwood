@@ -1,14 +1,24 @@
 #include "console_win.h"
 #include <ncurses.h>
 
+static bool g_initialized = false;
+
 static WINDOW* g_window = NULL;
 
 void console_init(void) {
+    if(g_initialized) {
+        return;
+    }
+
     /* Create our window. */
     g_window = newwin(CONSOLE_WIN_H, CONSOLE_WIN_W, CONSOLE_WIN_Y, CONSOLE_WIN_X);
 }
 
 void console_end(void) {
+    if(!g_initialized) {
+        return;
+    }
+
     /* Destroy our window. */
     delwin(g_window);
 }

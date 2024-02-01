@@ -1,11 +1,13 @@
 #include "status_win.h"
+#include <assert.h>
+#include <errno.h>
+#include <ncurses.h>
+#include <pthread.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include "common.h"
 #include "console_win.h"
-#include <string.h>
-#include <ncurses.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
 
 static bool g_initialized = false;
 
@@ -81,10 +83,14 @@ static void* _safety_flash_loop(void*) {
         timeout.tv_sec += g_flash_rate;
 
         /* Wait until we've either been signalled or 1 second passes. */
-        pthread_cond_timedwait(&g_flash_cond, &g_flash_cond_mutex, &timeout);
+        int res = 0;
+        while(res != ETIMEDOUT && g_enable_flash) {
+            res = pthread_cond_timedwait(&g_flash_cond, &g_flash_cond_mutex, &timeout);
+            assert(res == 0 || res == ETIMEDOUT);
+        }
 
-        /* Aquire lock on enable flag. */
-        pthread_mutex_lock(&g_flash_mutex);
+        /* Aquire lock for enable flag. */
+        assert(pthread_mutex_lock(&g_flash_mutex) == 0);
 
         /* Toggle safety state if we're suppose to still be running, otherwise quit. */
         if(g_enable_flash) {
@@ -95,7 +101,7 @@ static void* _safety_flash_loop(void*) {
             done = true;
         }
 
-        pthread_mutex_unlock(&g_flash_mutex);
+        assert(pthread_mutex_unlock(&g_flash_mutex) == 0);
     }
 
     return NULL;
@@ -107,7 +113,7 @@ void _start_safety_flash(void) {
     }
 
     g_enable_flash = true;
-    pthread_create(&g_flash_thread, NULL, _safety_flash_loop, NULL);
+    assert(pthread_create(&g_flash_thread, NULL, _safety_flash_loop, NULL) == 0);
 }
 
 void _end_safety_flash(void) {
@@ -116,13 +122,13 @@ void _end_safety_flash(void) {
     }
 
     /* Set flag to disable flash. */
-    pthread_mutex_lock(&g_flash_mutex);
+    assert(pthread_mutex_lock(&g_flash_mutex) == 0);
     g_enable_flash = false;
-    pthread_mutex_unlock(&g_flash_mutex);
+    assert(pthread_mutex_unlock(&g_flash_mutex) == 0);
 
     /* Try to signal thread. */
-    pthread_cond_signal(&g_flash_cond);
-    pthread_join(g_flash_thread, NULL);
+    assert(pthread_cond_signal(&g_flash_cond) == 0);
+    assert(pthread_join(g_flash_thread, NULL) == 0);
 }
 
 void status_init(void) {
@@ -132,6 +138,7 @@ void status_init(void) {
 
     /* Create our window. */
     g_window = newwin(STATUS_WIN_H, STATUS_WIN_W, STATUS_WIN_Y, STATUS_WIN_X);
+    assert(g_window != NULL);
     box(g_window, 0, 0);
 }
 
@@ -151,7 +158,7 @@ void status_update(void) {
 	char depth_hist[256];
 
     /* Aquire lock, we only want one thread updating this at a time. */
-    pthread_mutex_lock(&g_status_mutex);
+    assert(pthread_mutex_lock(&g_status_mutex) == 0);
 
 	/* Generate timestamp string. */
 	time_t t = time(NULL);
@@ -184,5 +191,5 @@ void status_update(void) {
     /* Update window. */
     wrefresh(g_window);
 
-    pthread_mutex_unlock(&g_status_mutex);
+    assert(pthread_mutex_unlock(&g_status_mutex) == 0);
 }

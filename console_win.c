@@ -1,4 +1,5 @@
 #include "console_win.h"
+#include <assert.h>
 #include <ncurses.h>
 
 static bool g_initialized = false;
@@ -12,6 +13,7 @@ void console_init(void) {
 
     /* Create our window. */
     g_window = newwin(CONSOLE_WIN_H, CONSOLE_WIN_W, CONSOLE_WIN_Y, CONSOLE_WIN_X);
+    assert(g_window != NULL);
 }
 
 void console_end(void) {

@@ -1,14 +1,15 @@
+#include <assert.h>
+#include <ctype.h>
+#include <ncurses.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <time.h>
-#include <ctype.h>
-#include <ncurses.h>
 #include "common.h"
 #include "console_win.h"
-#include "status_win.h"
 #include "reactor.h"
+#include "status_win.h"
 
 void get_string(char *dest) {
 	char input_buffer[8192];
@@ -183,9 +184,9 @@ void reactor_status(void) {
 	char choice = tolower(console_read_chr());
 
 	/* Process choice. */
-	pthread_mutex_lock(&g_reactor_mutex);
+	assert(pthread_mutex_lock(&g_reactor_mutex) == 0);
 	process_choice(choice);
-	pthread_mutex_unlock(&g_reactor_mutex);
+	assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
 
 	/* Update reactor if we aren't in realtime mode, otherwise just update status. */
 	if(!reactor_is_realtime()) {
@@ -196,9 +197,9 @@ void reactor_status(void) {
 	}
 
 	/* Process any reactor warnings. */
-	pthread_mutex_lock(&g_reactor_mutex);
+	assert(pthread_mutex_lock(&g_reactor_mutex) == 0);
 	reactor_process_warns();
-	pthread_mutex_unlock(&g_reactor_mutex);
+	assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
 
 	console_wait_until_press();
 

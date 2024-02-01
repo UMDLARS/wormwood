@@ -1,6 +1,9 @@
 #include "reactor.h"
-#include <stdlib.h>
+#include <assert.h>
+#include <errno.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include "status_win.h"
 #include "console_win.h"
 #include "common.h"
@@ -61,17 +64,20 @@ static void _print_sparks(void) {
 void* _realtime_reactor_loop(void*) {
     struct timespec timeout;
     bool done = false;
-
     while(!done) {
         /* Get current time and add [g_realtime_update_rate] sec. */
         timespec_get(&timeout, TIME_UTC);
         timeout.tv_sec += g_realtime_update_rate;
 
         /* Wait until we're interrupted or X seconds pass. */
-        pthread_cond_timedwait(&g_realtime_cond, &g_realtime_cond_mutex, &timeout);
+        int res = 0;
+        while(res != ETIMEDOUT && g_realtime_active) {
+            res = pthread_cond_timedwait(&g_realtime_cond, &g_realtime_cond_mutex, &timeout);
+            assert(res == 0 || res == ETIMEDOUT);
+        }
 
         /* Aquire lock. */
-        pthread_mutex_lock(&g_reactor_mutex);
+        assert(pthread_mutex_lock(&g_reactor_mutex) == 0);
 
         /* Perform update if we're suppose to still be running, otherwise quit. */
         if(g_realtime_active) {
@@ -81,7 +87,7 @@ void* _realtime_reactor_loop(void*) {
             done = true;
         }
 
-        pthread_mutex_unlock(&g_reactor_mutex);
+        assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
     }
 
     return NULL;
@@ -226,7 +232,7 @@ void reactor_start_realtime_update(void) {
     g_realtime_active = true;
 
     /* Start thread. */
-    pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL);
+    assert(pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL) == 0);
 }
 
 void reactor_end_realtime_update(void) {
@@ -235,13 +241,13 @@ void reactor_end_realtime_update(void) {
     }
 
     /* Set flag to disable updates in thread. */
-    pthread_mutex_lock(&g_reactor_mutex);
+    assert(pthread_mutex_lock(&g_reactor_mutex) == 0);
     g_realtime_active = false;
-    pthread_mutex_unlock(&g_reactor_mutex);
+    assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
 
     /* Wake up thread. */
-    pthread_cond_signal(&g_realtime_cond);
+    assert(pthread_cond_signal(&g_realtime_cond) == 0);
 
     /* Wait for thread to finish. */
-    pthread_join(g_realtime_thread, NULL);
+    assert(pthread_join(g_realtime_thread, NULL) == 0);
 }

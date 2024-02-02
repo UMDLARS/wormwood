@@ -28,8 +28,6 @@ float reactor_get_coolant_temp(void);
 
 void reactor_update(void);
 
-void reactor_process_warns(void);
-
 void reactor_set_realtime_enabled(bool enabled);
 bool reactor_is_realtime(void);
 

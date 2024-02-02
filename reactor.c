@@ -158,7 +158,7 @@ static void _update_impl(void) {
 	}
 }
 
-void* _realtime_reactor_loop(void*) {
+static void* _realtime_reactor_loop(void*) {
     struct timespec timeout;
     bool done = false;
     while(!done) {
@@ -174,7 +174,7 @@ void* _realtime_reactor_loop(void*) {
         }
 
         /* Aquire lock. */
-        assert(pthread_mutex_lock(&g_reactor_mutex) == 0);
+        _aquire_lock();
 
         /* Perform update if we're suppose to still be running, otherwise quit. */
         if(g_realtime_active) {
@@ -187,7 +187,7 @@ void* _realtime_reactor_loop(void*) {
             done = true;
         }
 
-        assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
+        _release_lock();
 
         /* Update status. */
         status_update();
@@ -196,37 +196,7 @@ void* _realtime_reactor_loop(void*) {
     return NULL;
 }
 
-usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_usermode); }
-void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_usermode = mode); }
-
-bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_safety_enabled); }
-void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_safety_enabled = enabled); }
-
-char reactor_get_rod_depth(void) { _EXCL_RETURN(char, g_rod_depth); }
-void reactor_set_rod_depth(char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
-
-float reactor_get_coolant_flow(void) { _EXCL_RETURN(float, g_coolant_flow); }
-void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_coolant_flow = flow); }
-
-float reactor_get_temp(void) { _EXCL_RETURN(float, g_temp); }
-float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_coolant_temp); }
-
-void reactor_update(void) {
-    /* If we're not in realtime mode, perform an update. */
-    if(!reactor_is_realtime()) {
-        _update_impl();
-    }
-
-    /* Update status window. */
-    status_update();
-
-    /* Process any warnings. */
-    reactor_process_warns();
-}
-
-void reactor_process_warns(void) {
-    _aquire_lock();
-
+static void _reactor_process_warns(void) {
     /* Check if temp is getting dangerously high. */
 	if (g_temp > 3000) {
 		console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
@@ -271,8 +241,38 @@ void reactor_process_warns(void) {
 		_print_sparks();
         exit_reason = exit_reason_fail;
     }
+}
+
+usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_usermode); }
+void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_usermode = mode); }
+
+bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_safety_enabled); }
+void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_safety_enabled = enabled); }
+
+char reactor_get_rod_depth(void) { _EXCL_RETURN(char, g_rod_depth); }
+void reactor_set_rod_depth(char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
+
+float reactor_get_coolant_flow(void) { _EXCL_RETURN(float, g_coolant_flow); }
+void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_coolant_flow = flow); }
+
+float reactor_get_temp(void) { _EXCL_RETURN(float, g_temp); }
+float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_coolant_temp); }
+
+void reactor_update(void) {
+    _aquire_lock();
+
+    /* If we're not in realtime mode, perform an update. */
+    if(!reactor_is_realtime()) {
+        _update_impl();
+    }
+
+    /* Process any warnings. */
+    _reactor_process_warns();
 
     _release_lock();
+
+    /* Update status window. */
+    status_update();
 }
 
 void reactor_set_realtime_enabled(bool enabled) { g_is_realtime = enabled; }
@@ -296,9 +296,9 @@ void reactor_end_realtime_update(void) {
     }
 
     /* Set flag to disable updates in thread. */
-    assert(pthread_mutex_lock(&g_reactor_mutex) == 0);
+    _aquire_lock();
     g_realtime_active = false;
-    assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
+    _release_lock();
 
     /* Wake up thread. */
     assert(pthread_cond_signal(&g_realtime_cond) == 0);

@@ -8,7 +8,7 @@
 #include "console_win.h"
 #include "common.h"
 
-pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static usermode_t g_usermode = usermode_none;
 
@@ -19,9 +19,8 @@ static float g_coolant_flow = 10;
 static float g_temp = 70.0;
 static float g_coolant_temp = 70.0;
 
-static bool g_is_realtime = false;
-
 /* Realtime mode variables. */
+static bool g_is_realtime = false;
 static const int g_realtime_update_rate = 2; // Seconds
 static bool g_realtime_active;
 static pthread_t g_realtime_thread;
@@ -32,7 +31,6 @@ static struct {
     uint temp_error : 1;
     uint safety_enable :1;
     uint reach_norm : 1;
-    uint rupture : 1;
 } g_warnings;
 
 void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
@@ -158,12 +156,6 @@ static void _update_impl(void) {
         g_warnings.safety_enable = false;
 		g_safety_active = 0;
 	}
-
-	/* Check if rod depth is safe. */
-	if (g_rod_depth < 0 || g_rod_depth > MAX_SAFE_DEPTH) {
-        g_warnings.rupture = true;
-        exit_reason = exit_reason_fail;
-	}
 }
 
 void* _realtime_reactor_loop(void*) {
@@ -187,6 +179,9 @@ void* _realtime_reactor_loop(void*) {
         /* Perform update if we're suppose to still be running, otherwise quit. */
         if(g_realtime_active) {
             _update_impl();
+            if(exit_reason != exit_reason_none) {
+                done = true;
+            }
         }
         else {
             done = true;
@@ -266,7 +261,7 @@ void reactor_process_warns(void) {
     }
 
     /* Check if a rupture has occurred. */
-    if(g_warnings.rupture) {
+    if(g_rod_depth < 0 || g_rod_depth > MAX_SAFE_DEPTH) {
 		console_clear();
 		_print_sparks();
 		console_printf("WARNING! WARNING! WARNING!\n");
@@ -274,6 +269,7 @@ void reactor_process_warns(void) {
 		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
 	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
+        exit_reason = exit_reason_fail;
     }
 
     _release_lock();

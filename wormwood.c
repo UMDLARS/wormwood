@@ -13,7 +13,7 @@
 
 void get_string(char *dest) {
 	char input_buffer[8192];
-	console_read_str(input_buffer); // Creates a new vuln, do we want this?
+	console_read_strn(input_buffer, 8192);
 	strcpy(dest, input_buffer);
 }
 

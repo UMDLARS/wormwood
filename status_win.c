@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include "common.h"
 #include "console_win.h"
+#include "reactor.h"
 
 static bool g_initialized = false;
 
@@ -70,7 +71,6 @@ static void _set_safety_state(int state) {
     /* Update safety text. */
     mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", g_safety_string[state]);
     wrefresh(g_window);
-    console_reset_cursor();
 }
 
 static void* _safety_flash_loop(void*) {
@@ -95,6 +95,7 @@ static void* _safety_flash_loop(void*) {
         /* Toggle safety state if we're suppose to still be running, otherwise quit. */
         if(g_enable_flash) {
             _set_safety_state(state ? 2 : 0);
+            console_refresh_cursor();
             state = !state;
         }
         else {
@@ -166,17 +167,21 @@ void status_update(void) {
 	char timestring[64];
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
+    char rod_depth = reactor_get_rod_depth();
+    float coolant_flow = reactor_get_coolant_flow();
+
 	/* Print status message. */
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL             (%s)", timestring);
     mvwhline(g_window, 2, 1, 0, STATUS_WIN_W - 2);
-	mvwprintw(g_window, 3, 1, "reactor temp: %8.2f              coolant_temp: %8.2f", reactor_temp, coolant_temp); 
+	mvwprintw(g_window, 3, 1, "reactor temp: %8.2f              coolant_temp: %8.2f", reactor_get_temp(), reactor_get_coolant_temp()); 
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", rod_depth, _draw_rod_depth(rod_depth), coolant_flow); 
-	mvwprintw(g_window, 5, 1, "User: %-10s", users[usermode]);
+	mvwprintw(g_window, 5, 1, "User: %-10s", users[reactor_get_usermode()]);
     mvwhline(g_window, 6, 1, 0, STATUS_WIN_W - 2);
 
     /* If safety is disabled, the safety message should flash. */
-    if(safety_enabled != g_last_safety_state) {
-        if(!safety_enabled) {
+    bool safety = reactor_get_safety();
+    if(safety != g_last_safety_state) {
+        if(!safety) {
             _set_safety_state(0);
             _start_safety_flash();
         }
@@ -185,11 +190,14 @@ void status_update(void) {
             _set_safety_state(1);
         }
 
-        g_last_safety_state = safety_enabled;
+        g_last_safety_state = safety;
     }
 
     /* Update window. */
     wrefresh(g_window);
+
+    /* Move visible cursor back to console window. */
+    console_refresh_cursor();
 
     assert(pthread_mutex_unlock(&g_status_mutex) == 0);
 }

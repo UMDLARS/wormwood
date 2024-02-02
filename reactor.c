@@ -10,8 +10,18 @@
 
 pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static usermode_t g_usermode = usermode_none;
+
+static bool g_safety_enabled = true;
+static bool g_safety_active = false;
+static char g_rod_depth = 16;
+static float g_coolant_flow = 10;
+static float g_temp = 70.0;
+static float g_coolant_temp = 70.0;
+
 static bool g_is_realtime = false;
 
+/* Realtime mode variables. */
 static const int g_realtime_update_rate = 2; // Seconds
 static bool g_realtime_active;
 static pthread_t g_realtime_thread;
@@ -24,6 +34,24 @@ static struct {
     uint reach_norm : 1;
     uint rupture : 1;
 } g_warnings;
+
+void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
+void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mutex) == 0); }
+
+#define _EXCL_ACCESS(expr) \
+{ \
+    _aquire_lock(); \
+    expr; \
+    _release_lock(); \
+}
+
+#define _EXCL_RETURN(type, var) \
+{ \
+    _aquire_lock(); \
+    type _val = var; \
+    _release_lock(); \
+    return _val; \
+}
 
 static float _float_up_to(int max) {
 	// https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c
@@ -61,6 +89,83 @@ static void _print_sparks(void) {
 	console_printf("\n");
 }
 
+static void _update_impl(void) {
+	FUNCNAME
+
+	/* DO NOT UPDATE THIS CODE */
+
+	/* This may shock you, but this is not a real nuclear reactor.
+	 * the physics of this "simulation" are not even remotely accurate...
+	 * in fact, I'm just making them up.
+	 * But, for the purposes of this activity, pretend that there is
+	 * real danger or stakes. It's more engaging and interesting that way!
+	 */
+
+	/* Fail/throw error if reactor temp goes over 5K. */
+	if (g_temp >= 5000) {
+        g_warnings.temp_error = true;
+        exit_reason = exit_reason_fail;
+		return;
+	}
+
+	/* COOLANT FLOW HEAT REDUCTION. */
+	/* Coolant flow reduces reactor temp. */
+	if (g_temp > 70) {
+		g_temp = g_temp - ((g_coolant_flow * _float_up_to(7)));
+	}
+
+	/* Coolant temp follows the reactor temp, but at a delay. */
+	g_coolant_temp = g_coolant_temp + ((g_temp - g_coolant_temp) * .15);
+
+	/* Reactor cannot get below room temp. */
+	if (g_temp < 70) {
+		g_temp = 70;
+	}
+
+	/* Fuzz the reactor temp a bit for realism. */
+	g_temp = g_temp + _get_fuzz() * _rand_sign();
+
+	/* RETRACTING THE RODS INCREASES THE TEMP */
+	/* for each unit the rod is not fully extracted, add a random float up to 50. */
+	float bump = 0;
+	int i;
+	int rod_factor = MAX_SAFE_DEPTH - g_rod_depth;
+
+	for (i = rod_factor; i > 0; i--) {
+		bump = bump + _float_up_to(20);
+	}
+	g_temp = g_temp + bump;
+
+	/* SAFETY PROTOCOLS */
+	if (g_safety_enabled == true && g_temp > 2000) {
+        g_warnings.safety_enable = true;
+		g_safety_active = 1;
+		if (g_rod_depth <= MAX_SAFE_DEPTH) {
+			/* Automatically increment g_rod_depth to cool reactor. */
+			g_rod_depth++;
+		}
+
+		if (g_coolant_flow <= MAX_FLOW_RATE) {
+			g_coolant_flow = g_coolant_flow + 1;
+			if (g_coolant_flow > MAX_FLOW_RATE) {
+				g_coolant_flow = MAX_FLOW_RATE;
+			}
+		}
+	}
+
+	if (g_safety_active == 1 && g_temp < 2000) {
+        g_warnings.reach_norm = true;
+        g_warnings.safety_enable = false;
+		g_safety_active = 0;
+	}
+
+	/* Check if rod depth is safe. */
+	if (g_rod_depth < 0 || g_rod_depth > MAX_SAFE_DEPTH) {
+        g_warnings.rupture = true;
+        exit_reason = exit_reason_fail;
+	}
+}
+
 void* _realtime_reactor_loop(void*) {
     struct timespec timeout;
     bool done = false;
@@ -81,126 +186,56 @@ void* _realtime_reactor_loop(void*) {
 
         /* Perform update if we're suppose to still be running, otherwise quit. */
         if(g_realtime_active) {
-            reactor_update();
+            _update_impl();
         }
         else {
             done = true;
         }
 
         assert(pthread_mutex_unlock(&g_reactor_mutex) == 0);
+
+        /* Update status. */
+        status_update();
     }
 
     return NULL;
 }
 
+usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_usermode); }
+void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_usermode = mode); }
+
+bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_safety_enabled); }
+void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_safety_enabled = enabled); }
+
+char reactor_get_rod_depth(void) { _EXCL_RETURN(char, g_rod_depth); }
+void reactor_set_rod_depth(char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
+
+float reactor_get_coolant_flow(void) { _EXCL_RETURN(float, g_coolant_flow); }
+void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_coolant_flow = flow); }
+
+float reactor_get_temp(void) { _EXCL_RETURN(float, g_temp); }
+float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_coolant_temp); }
+
 void reactor_update(void) {
-	FUNCNAME
-
-	/* DO NOT UPDATE THIS CODE */
-
-	/* This may shock you, but this is not a real nuclear reactor.
-	 * the physics of this "simulation" are not even remotely accurate...
-	 * in fact, I'm just making them up.
-	 * But, for the purposes of this activity, pretend that there is
-	 * real danger or stakes. It's more engaging and interesting that way!
-	 */
-
-	/* Fail/throw error if reactor temp goes over 5K. */
-	if (reactor_temp >= 5000) {
-        g_warnings.temp_error = true;
-        exit_reason = exit_reason_fail;
-		return;
-	}
-
-	/* COOLANT FLOW HEAT REDUCTION. */
-	/* Coolant flow reduces reactor temp. */
-	if (reactor_temp > 70) {
-		reactor_temp = reactor_temp - ((coolant_flow * _float_up_to(7)));
-	}
-
-	/* Coolant temp follows the reactor temp, but at a delay. */
-	coolant_temp = coolant_temp + ((reactor_temp - coolant_temp) * .15);
-
-	/* Reactor cannot get below room temp. */
-	if (reactor_temp < 70) {
-		reactor_temp = 70;
-	}
-
-	/* Fuzz the reactor temp a bit for realism. */
-	reactor_temp = reactor_temp + _get_fuzz() * _rand_sign();
-
-	/* RETRACTING THE RODS INCREASES THE TEMP */
-	/* for each unit the rod is not fully extracted, add a random float up to 50. */
-	float bump = 0;
-	int i;
-	int rod_factor = MAX_SAFE_DEPTH - rod_depth;
-
-	for (i = rod_factor; i > 0; i--) {
-		bump = bump + _float_up_to(20);
-	}
-	reactor_temp = reactor_temp + bump;
-
-	/* SAFETY PROTOCOLS */
-	if (safety_enabled == true && reactor_temp > 2000) {
-        g_warnings.safety_enable = true;
-		safety_active = 1;
-		if (rod_depth <= MAX_SAFE_DEPTH) {
-			/* Automatically increment rod_depth to cool reactor. */
-			rod_depth++;
-		}
-
-		if (coolant_flow <= MAX_FLOW_RATE) {
-			coolant_flow = coolant_flow + 1;
-			if (coolant_flow > MAX_FLOW_RATE) {
-				coolant_flow = MAX_FLOW_RATE;
-			}
-		}
-	}
-
-	if (safety_active == 1 && reactor_temp < 2000) {
-        g_warnings.reach_norm = true;
-        g_warnings.safety_enable = false;
-		safety_active = 0;
-	}
-
-	/* Check if rod depth is safe. */
-	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH) {
-        g_warnings.rupture = true;
-        exit_reason = exit_reason_fail;
-	}
+    /* If we're not in realtime mode, perform an update. */
+    if(!reactor_is_realtime()) {
+        _update_impl();
+    }
 
     /* Update status window. */
     status_update();
+
+    /* Process any warnings. */
+    reactor_process_warns();
 }
 
 void reactor_process_warns(void) {
-    /* Check if we've overheated. */
-    if(g_warnings.temp_error) {
-		console_clear();
-		_print_sparks();
-		console_printf("****** COOLANT VAPORIZATION *******\n");
-		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
-		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
-		_print_sparks();
-        return;
-    }
-
-    /* Check if a rupture has occurred. */
-    if(g_warnings.rupture) {
-		console_clear();
-		_print_sparks();
-		console_printf("WARNING! WARNING! WARNING!\n");
-		console_printf("CONTAINMENT VESSEL RUPTURE!\n");
-		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
-	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
-		_print_sparks();
-        return;
-    }
+    _aquire_lock();
 
     /* Check if temp is getting dangerously high. */
-	if (reactor_temp > 3000) {
+	if (g_temp > 3000) {
 		console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
-		if(reactor_temp > 4000) {
+		if(g_temp > 4000) {
 			console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
 		}
         console_printf("\n");
@@ -219,6 +254,29 @@ void reactor_process_warns(void) {
         /* We only need to print this once. */
         g_warnings.reach_norm = false;
     }
+
+    /* Check if we've overheated. */
+    if(g_warnings.temp_error) {
+		console_clear();
+		_print_sparks();
+		console_printf("****** COOLANT VAPORIZATION *******\n");
+		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
+		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
+		_print_sparks();
+    }
+
+    /* Check if a rupture has occurred. */
+    if(g_warnings.rupture) {
+		console_clear();
+		_print_sparks();
+		console_printf("WARNING! WARNING! WARNING!\n");
+		console_printf("CONTAINMENT VESSEL RUPTURE!\n");
+		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
+	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
+		_print_sparks();
+    }
+
+    _release_lock();
 }
 
 void reactor_set_realtime_enabled(bool enabled) { g_is_realtime = enabled; }

@@ -44,7 +44,7 @@ void console_wait_until_press(void) {
     wgetch(g_window);
 }
 
-void console_reset_cursor(void) {
+void console_refresh_cursor(void) {
     int y, x;
     getyx(g_window, y, x);
     wmove(g_window, y, x);

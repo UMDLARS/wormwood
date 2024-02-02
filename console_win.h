@@ -27,4 +27,4 @@ void console_end(void);
 
 void console_clear(void);
 
-void console_reset_cursor(void);
+void console_refresh_cursor(void);

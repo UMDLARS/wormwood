@@ -5,6 +5,10 @@
 #define MAX_SAFE_DEPTH 16
 #define MAX_FLOW_RATE 100.0
 
+#define REACTOR_WARNING_TEMP 3000
+#define REACTOR_WARNING_TEMP_2 4000
+#define REACTOR_EXPLODE_TEMP 5000
+
 typedef enum {
     usermode_none = 0,
     usermode_oper,

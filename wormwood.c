@@ -205,6 +205,11 @@ void reactor_status(void) {
 int main(int argc, char *argv[]) {
 	/* Initialize ncurses. */
 	initscr();
+	start_color();
+
+	/* Setup colors. */
+	init_pair(1, COLOR_WHITE, COLOR_RED);
+	init_pair(2, COLOR_RED, COLOR_BLACK);
 
 	/* Initialize windows. */
 	status_init();

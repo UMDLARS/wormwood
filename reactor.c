@@ -100,7 +100,7 @@ static void _update_impl(void) {
 	 */
 
 	/* Fail/throw error if reactor temp goes over 5K. */
-	if (g_temp >= 5000) {
+	if (g_temp >= REACTOR_EXPLODE_TEMP) {
         g_warnings.temp_error = true;
         exit_reason = exit_reason_fail;
 		return;
@@ -198,9 +198,9 @@ static void* _realtime_reactor_loop(void*) {
 
 static void _reactor_process_warns(void) {
     /* Check if temp is getting dangerously high. */
-	if (g_temp > 3000) {
+	if (g_temp > REACTOR_WARNING_TEMP) {
 		console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
-		if(g_temp > 4000) {
+		if(g_temp > REACTOR_WARNING_TEMP_2) {
 			console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
 		}
         console_printf("\n");

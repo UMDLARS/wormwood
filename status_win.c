@@ -169,14 +169,43 @@ void status_update(void) {
 
     char rod_depth = reactor_get_rod_depth();
     float coolant_flow = reactor_get_coolant_flow();
+    float coolant_temp = reactor_get_coolant_temp();
+    float temp = reactor_get_temp();
 
 	/* Print status message. */
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL             (%s)", timestring);
     mvwhline(g_window, 2, 1, 0, STATUS_WIN_W - 2);
-	mvwprintw(g_window, 3, 1, "reactor temp: %8.2f              coolant_temp: %8.2f", reactor_get_temp(), reactor_get_coolant_temp()); 
+	//mvwprintw(g_window, 3, 1, "reactor temp: %8.2f              coolant_temp: %8.2f", reactor_get_temp(), reactor_get_coolant_temp()); 
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", rod_depth, _draw_rod_depth(rod_depth), coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", users[reactor_get_usermode()]);
     mvwhline(g_window, 6, 1, 0, STATUS_WIN_W - 2);
+
+    /* Print start of temperature line. */
+    mvwprintw(g_window, 3, 1, "reactor temp: ");
+    wrefresh(g_window);
+
+    /* Update color if the reactor is getting hot. */
+    temp = 4500;
+    if(temp >= REACTOR_WARNING_TEMP_2) {
+        wattron(g_window, COLOR_PAIR(1));
+    }
+    else if(temp >= REACTOR_WARNING_TEMP) {
+        wattron(g_window, COLOR_PAIR(2));
+    }
+
+    /* Print temp. */
+    wprintw(g_window, "%8.2f", temp);
+
+    /* Clear colors. */
+    if(temp >= REACTOR_WARNING_TEMP_2) {
+        wattroff(g_window, COLOR_PAIR(1));
+    }
+    else if(temp >= REACTOR_WARNING_TEMP) {
+        wattroff(g_window, COLOR_PAIR(2));
+    }
+
+    /* Print coolant temp. */
+    mvwprintw(g_window, 3, 34, "coolant_temp: %8.2f", coolant_temp);
 
     /* If safety is disabled, the safety message should flash. */
     bool safety = reactor_get_safety();

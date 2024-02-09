@@ -29,8 +29,7 @@ static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct {
     uint temp_error : 1;
-    uint safety_enable :1;
-    uint reach_norm : 1;
+    uint repture_error :1;
 } g_warnings;
 
 void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
@@ -103,6 +102,7 @@ static void _update_impl(void) {
 	if (g_temp >= REACTOR_EXPLODE_TEMP) {
         g_warnings.temp_error = true;
         exit_reason = exit_reason_fail;
+		console_interrupt();
 		return;
 	}
 
@@ -136,7 +136,6 @@ static void _update_impl(void) {
 
 	/* SAFETY PROTOCOLS */
 	if (g_safety_enabled == true && g_temp > 2000) {
-        g_warnings.safety_enable = true;
 		g_safety_active = 1;
 		if (g_rod_depth <= MAX_SAFE_DEPTH) {
 			/* Automatically increment g_rod_depth to cool reactor. */
@@ -152,9 +151,13 @@ static void _update_impl(void) {
 	}
 
 	if (g_safety_active == 1 && g_temp < 2000) {
-        g_warnings.reach_norm = true;
-        g_warnings.safety_enable = false;
 		g_safety_active = 0;
+	}
+
+	if(g_rod_depth < 0 || g_rod_depth > MAX_SAFE_DEPTH) {
+		g_warnings.repture_error = true;
+		exit_reason = exit_reason_fail;
+		console_interrupt();
 	}
 }
 
@@ -197,29 +200,6 @@ static void* _realtime_reactor_loop(void*) {
 }
 
 static void _reactor_process_warns(void) {
-    /* Check if temp is getting dangerously high. */
-	if (g_temp > REACTOR_WARNING_TEMP) {
-		console_printf("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
-		if(g_temp > REACTOR_WARNING_TEMP_2) {
-			console_printf("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
-		}
-        console_printf("\n");
-	}
-
-    /* Check if safety had to be enabled. */
-    if(g_warnings.safety_enable) {
-        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
-        console_printf("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
-    }
-
-    /* Check if we've reached normal temps again. */
-    if(g_warnings.reach_norm) {
-        console_printf("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
-
-        /* We only need to print this once. */
-        g_warnings.reach_norm = false;
-    }
-
     /* Check if we've overheated. */
     if(g_warnings.temp_error) {
 		console_clear();
@@ -228,6 +208,7 @@ static void _reactor_process_warns(void) {
 		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
 		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
 		_print_sparks();
+		console_wait_until_press();
     }
 
     /* Check if a rupture has occurred. */
@@ -239,6 +220,7 @@ static void _reactor_process_warns(void) {
 		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
 	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
+		console_wait_until_press();
         exit_reason = exit_reason_fail;
     }
 }

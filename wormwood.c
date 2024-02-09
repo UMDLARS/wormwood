@@ -13,10 +13,13 @@
 
 static bool g_wait_for_confirm = false;
 
-void get_string(char *dest) {
+bool get_string(char *dest) {
 	char input_buffer[8192];
-	console_read_strn(input_buffer, 8192);
+	if(!console_read_strn(input_buffer, 8192)) {
+		return false;
+	}
 	strcpy(dest, input_buffer);
+	return true;
 }
 
 void auth_user(void) {
@@ -30,12 +33,16 @@ void auth_user(void) {
 	/* Get username and put into user_user. */
 	console_printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
     console_printf("Which role (%s or %s)?: ", users[1], users[2]);
-	get_string(user_user);
+	if(!get_string(user_user)) {
+		return;
+	}
 
 	console_printf("Password for user '");
 	console_printf(user_user);
 	console_printf("': ");
-	get_string(user_pass);
+	if(!get_string(user_pass)) {
+		return;
+	}
 
 	/* Initially set user mode to none. */
 	reactor_set_usermode(usermode_none);
@@ -105,8 +112,13 @@ void set_rod_depth(void) {
 	int new = 0;
 	char answer[256];
 
+	/* Ask user for rod depth. */
 	console_printf("What should the new rod depth be (0-16)?: ");
-	get_string(answer);
+	if(!get_string(answer)) {
+		return;
+	}
+
+	/* Convert rod depth to an integer. */
 	new = atoi(answer);
 
 	if (new <= MAX_SAFE_DEPTH) {
@@ -123,8 +135,13 @@ void set_flow_rate(void) {
 	char answer[256];
 	usermode_t userid = reactor_get_usermode();
 
+	/* Ask user for flow rate. */
 	console_printf("What should the new flow rate be (0.0-100.0)?: ");
-	get_string(answer);
+	if(!get_string(answer)) {
+		return;
+	}
+
+	/* Convert flow rate to a float. */
 	new = atof(answer);
 
 	if (new > MAX_FLOW_RATE) {
@@ -187,9 +204,10 @@ void reactor_status(void) {
 	/* Read choice. */
 	console_printf("Enter your selection (ARFDELQ) and then press ENTER.\n");
 	char choice = tolower(console_read_chr());
-
-	/* Process choice. */
-	process_choice(choice);
+	if(choice != ERR) {
+		/* Process choice. */
+		process_choice(choice);
+	}
 
 	/* Perform reactor update. */
 	reactor_update();

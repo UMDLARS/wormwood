@@ -60,16 +60,26 @@ void auth_user(void) {
 		return;
 	}
 
-	/* Check if provided password is correct. */
-	if (strcmp(user_pass, passes[userid]) == 0) {
-		reactor_set_usermode(userid);
-	} 
-	else {
-		console_printf("AUTHENTICATION FAILED (incorrect password)\n");
-		console_wait_until_press();
+	switch(userid) {
+		case usermode_oper:
+			if(strcmp(user_pass, passes[usermode_oper]) != 0) {
+				console_printf("AUTHENTICATION FAILED (incorrect password)\n");
+				console_wait_until_press();
+			}
+
+			reactor_set_usermode(userid);
+			break;
+		case usermode_super:
+			if(strcmp(user_pass, passes[usermode_super]) != 0) {
+				console_printf("AUTHENTICATION FAILED (incorrect password)\n");
+				console_wait_until_press();
+				return;
+			}
+
+			reactor_set_usermode(userid);
+			break;
 	}
 
-	reactor_set_usermode(usermode_super);
 	return;
 }
 
@@ -109,7 +119,7 @@ void print_menu(void) {
 }
 
 void set_rod_depth(void) {
-	int new = 0;
+	unsigned char new = 0;
 	char answer[256];
 
 	/* Ask user for rod depth. */
@@ -121,13 +131,14 @@ void set_rod_depth(void) {
 	/* Convert rod depth to an integer. */
 	new = atoi(answer);
 
-	if (new <= MAX_SAFE_DEPTH) {
-		reactor_set_rod_depth(new);
-	}
-	else {
+	/* Make sure rod depth isn't too high. */
+	if(new > REACTOR_UNSAFE_DEPTH) {
 		console_printf("New depth value %d is greater than %d -- ignoring!", new, MAX_SAFE_DEPTH);
 		console_wait_until_press();
+		return;
 	}
+
+	reactor_set_rod_depth((char)new);
 }
 
 void set_flow_rate(void) {

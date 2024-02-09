@@ -14,7 +14,7 @@ static usermode_t g_usermode = usermode_none;
 
 static bool g_safety_enabled = true;
 static bool g_safety_active = false;
-static char g_rod_depth = 16;
+static char g_rod_depth = 127;
 static float g_coolant_flow = 10;
 static float g_temp = 70.0;
 static float g_coolant_temp = 70.0;
@@ -127,7 +127,7 @@ static void _update_impl(void) {
 	/* for each unit the rod is not fully extracted, add a random float up to 50. */
 	float bump = 0;
 	int i;
-	int rod_factor = MAX_SAFE_DEPTH - g_rod_depth;
+	int rod_factor = REACTOR_UNSAFE_DEPTH - 1 - g_rod_depth;
 
 	for (i = rod_factor; i > 0; i--) {
 		bump = bump + _float_up_to(20);
@@ -137,7 +137,7 @@ static void _update_impl(void) {
 	/* SAFETY PROTOCOLS */
 	if (g_safety_enabled == true && g_temp > 2000) {
 		g_safety_active = 1;
-		if (g_rod_depth <= MAX_SAFE_DEPTH) {
+		if (g_rod_depth < REACTOR_UNSAFE_DEPTH - 1) {
 			/* Automatically increment g_rod_depth to cool reactor. */
 			g_rod_depth++;
 		}
@@ -154,7 +154,7 @@ static void _update_impl(void) {
 		g_safety_active = 0;
 	}
 
-	if(g_rod_depth < 0 || g_rod_depth > MAX_SAFE_DEPTH) {
+	if(g_rod_depth < 0 || g_rod_depth >= REACTOR_UNSAFE_DEPTH) {
 		g_warnings.repture_error = true;
 		exit_reason = exit_reason_fail;
 		console_interrupt();

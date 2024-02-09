@@ -185,7 +185,6 @@ void status_update(void) {
     wrefresh(g_window);
 
     /* Update color if the reactor is getting hot. */
-    temp = 4500;
     if(temp >= REACTOR_WARNING_TEMP_2) {
         wattron(g_window, COLOR_PAIR(1));
     }

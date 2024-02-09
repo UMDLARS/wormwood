@@ -240,6 +240,22 @@ void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_coolant_flow = flow);
 float reactor_get_temp(void) { _EXCL_RETURN(float, g_temp); }
 float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_coolant_temp); }
 
+reactor_state_t reactor_get_state(void) {
+	_aquire_lock();
+
+	reactor_state_t state;
+	state.coolant_flow = g_coolant_flow;
+	state.coolant_temp = g_coolant_temp;
+	state.temp = g_temp;
+	state.usermode = g_usermode;
+	state.rod_depth = g_rod_depth;
+	state.safety_enabled = g_safety_enabled;
+
+	_release_lock();
+
+	return state;
+}
+
 void reactor_update(void) {
     _aquire_lock();
 

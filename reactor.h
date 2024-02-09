@@ -31,6 +31,17 @@ void reactor_set_coolant_flow(float flow);
 float reactor_get_temp(void);
 float reactor_get_coolant_temp(void);
 
+typedef struct {
+    float coolant_flow;
+    float coolant_temp;
+    float temp;
+    usermode_t usermode;
+    char rod_depth;
+    bool safety_enabled;
+} reactor_state_t;
+
+reactor_state_t reactor_get_state(void);
+
 void reactor_update(void);
 
 void reactor_set_realtime_enabled(bool enabled);

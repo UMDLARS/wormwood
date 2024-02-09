@@ -11,6 +11,8 @@
 #include "reactor.h"
 #include "status_win.h"
 
+static bool g_wait_for_confirm = false;
+
 void get_string(char *dest) {
 	char input_buffer[8192];
 	console_read_strn(input_buffer, 8192);
@@ -35,6 +37,9 @@ void auth_user(void) {
 	console_printf("': ");
 	get_string(user_pass);
 
+	/* Initially set user mode to none. */
+	reactor_set_usermode(usermode_none);
+
 	/* Check if provided user is valid & set usermode accordingly. */
 	if (strcmp(user_user, users[1]) == 0) {
 		userid = usermode_oper;
@@ -44,17 +49,17 @@ void auth_user(void) {
 	}
 	else {
 		console_printf("AUTHENTICATION FAILED (no such user)\n");
-		reactor_set_usermode(usermode_none);
+		console_wait_until_press();
 		return;
 	}
 
 	/* Check if provided password is correct. */
 	if (strcmp(user_pass, passes[userid]) == 0) {
-		console_printf("User '%s' AUTHENTICATED!\n", users[userid]);
 		reactor_set_usermode(userid);
 	} 
 	else {
 		console_printf("AUTHENTICATION FAILED (incorrect password)\n");
+		console_wait_until_press();
 	}
 
 	reactor_set_usermode(usermode_super);
@@ -99,18 +104,17 @@ void print_menu(void) {
 void set_rod_depth(void) {
 	int new = 0;
 	char answer[256];
-	char curr_depth = reactor_get_rod_depth();
 
-	console_printf("What should the new rod depth be (0-16) [current: %d]?: ", curr_depth);
+	console_printf("What should the new rod depth be (0-16)?: ");
 	get_string(answer);
 	new = atoi(answer);
 
-	console_printf("new: %d\n", new);
 	if (new <= MAX_SAFE_DEPTH) {
 		reactor_set_rod_depth(new);
 	}
 	else {
 		console_printf("New depth value %d is greater than %d -- ignoring!", new, MAX_SAFE_DEPTH);
+		console_wait_until_press();
 	}
 }
 
@@ -118,21 +122,21 @@ void set_flow_rate(void) {
 	float new = 0;
 	char answer[256];
 	usermode_t userid = reactor_get_usermode();
-	float curr_flow = reactor_get_coolant_flow();
 
-	console_printf("What should the new flow rate be (0.0-100.0) [current: %03.2f]?: ", curr_flow);
+	console_printf("What should the new flow rate be (0.0-100.0)?: ");
 	get_string(answer);
 	new = atof(answer);
 
 	if (new > MAX_FLOW_RATE) {
 		console_printf("New flow rate (%03.2f) is greater than max %03.2f -- ignoring!\n", new, MAX_FLOW_RATE);
+		console_wait_until_press();
 	}
 
 	if (new < 10 && userid < usermode_super) {
 		console_printf("User 'oper' cannot set flow rate below 10! -- ignoring!\n");
+		console_wait_until_press();
 	}
 	else {
-		console_printf("New coolant flow rate: %03.2f (was: %03.2f)\n", new, curr_flow);
 		reactor_set_coolant_flow(new);
 	}
 }
@@ -140,8 +144,6 @@ void set_flow_rate(void) {
 void process_choice(char choice) {
 	/* Clear console after the user enters an option. */
 	console_clear();
-
-	//console_printf("Your choice was: '%c'\n", choice);
 
 	switch(choice) {
 		case 'a':
@@ -155,14 +157,11 @@ void process_choice(char choice) {
 			break;
 		case 'd':
 			reactor_set_safety(false);
-			console_printf("***** SAFETY PROTOCOLS DISABLED!!! *****\n");
 			break;
 		case 'e':
 			reactor_set_safety(true);
-			console_printf("***** SAFETY PROTOCOLS ENABLED!!! *****\n");
 			break;
 		case 'l':
-			console_printf("Deauthenticating.\n");
 			reactor_set_usermode(usermode_none);
 			break;
 		case 'q':
@@ -170,7 +169,6 @@ void process_choice(char choice) {
 			exit_reason = exit_reason_quit;
 			break;
 		default:
-			console_printf("Doing nothing...\n");
 			break;
 	}
 
@@ -195,9 +193,6 @@ void reactor_status(void) {
 
 	/* Perform reactor update. */
 	reactor_update();
-
-	/* Wait for keypress. */
-	console_wait_until_press();
 
 	return;
 }

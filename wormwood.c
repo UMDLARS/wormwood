@@ -201,6 +201,7 @@ int main(int argc, char *argv[]) {
 	/* Initialize ncurses. */
 	initscr();
 	start_color();
+	halfdelay(1);
 
 	/* Setup colors. */
 	init_pair(1, COLOR_WHITE, COLOR_RED);

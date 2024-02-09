@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 #include <stddef.h>
 
 #define CONSOLE_WIN_X 0
@@ -13,10 +14,10 @@ void console_printf(const char* fmt, ...);
 char console_read_chr(void);
 
 /* Read a string from the console. */
-void console_read_str(char* out);
+bool console_read_str(char* out);
 
 /* Read a string of length max_len or less from the console. */
-void console_read_strn(char* out, int max_len);
+bool console_read_strn(char* out, int max_len);
 
 /* Wait until the user presses any key in the console. */
 void console_wait_until_press(void);
@@ -28,3 +29,5 @@ void console_end(void);
 void console_clear(void);
 
 void console_refresh_cursor(void);
+
+void console_interrupt(void);

@@ -29,7 +29,7 @@ static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct {
     uint temp_error : 1;
-    uint repture_error :1;
+    uint rupture_error :1;
 } g_warnings;
 
 void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
@@ -155,7 +155,7 @@ static void _update_impl(void) {
 	}
 
 	if(g_rod_depth < 0 || g_rod_depth >= REACTOR_UNSAFE_DEPTH) {
-		g_warnings.repture_error = true;
+		g_warnings.rupture_error = true;
 		exit_reason = exit_reason_fail;
 		console_interrupt();
 	}
@@ -212,7 +212,7 @@ static void _reactor_process_warns(void) {
     }
 
     /* Check if a rupture has occurred. */
-    if(g_rod_depth < 0 || g_rod_depth > MAX_SAFE_DEPTH) {
+    if(g_warnings.rupture_error) {
 		console_clear();
 		_print_sparks();
 		console_printf("WARNING! WARNING! WARNING!\n");

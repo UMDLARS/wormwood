@@ -133,7 +133,7 @@ void set_rod_depth(void) {
 
 	/* Make sure rod depth isn't too high. */
 	if(new > REACTOR_UNSAFE_DEPTH) {
-		console_printf("New depth value %d is greater than %d -- ignoring!", new, MAX_SAFE_DEPTH);
+		console_printf("New depth value %d is greater than or equal to %d -- ignoring!", new, REACTOR_UNSAFE_DEPTH);
 		console_wait_until_press();
 		return;
 	}

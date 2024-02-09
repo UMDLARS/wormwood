@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#define MAX_SAFE_DEPTH 16
 #define MAX_FLOW_RATE 100.0
 
 #define REACTOR_UNSAFE_DEPTH 128

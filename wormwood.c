@@ -11,8 +11,6 @@
 #include "reactor.h"
 #include "status_win.h"
 
-static bool g_wait_for_confirm = false;
-
 bool get_string(char *dest) {
 	char input_buffer[8192];
 	if(!console_read_strn(input_buffer, 8192)) {

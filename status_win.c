@@ -150,6 +150,18 @@ void _end_safety_flash(void) {
     assert(pthread_join(g_flash_thread, NULL) == 0);
 }
 
+void _draw_horiz_line(int y) {
+    mvwaddch(g_window, y, 0, ACS_LTEE);
+    mvwhline(g_window, y, 1, 0, STATUS_WIN_W - 2);
+    mvwaddch(g_window, y, STATUS_WIN_W - 1, ACS_RTEE);
+}
+
+void _draw_vert_line(int x) { // untested
+    mvwaddch(g_window, 0, x, ACS_TTEE);
+    mvwvline(g_window, 1, x, 0, STATUS_WIN_H - 2);
+    mvwaddch(g_window, STATUS_WIN_H - 1, x, ACS_BTEE);
+}
+
 void status_init(void) {
     if(g_initialized) {
         return;
@@ -158,7 +170,11 @@ void status_init(void) {
     /* Create our window. */
     g_window = newwin(STATUS_WIN_H, STATUS_WIN_W, STATUS_WIN_Y, STATUS_WIN_X);
     assert(g_window != NULL);
+
+    /* Create box & lines. */
     box(g_window, 0, 0);
+    _draw_horiz_line(2);
+    _draw_horiz_line(6);
 }
 
 void status_end(void) {
@@ -190,10 +206,8 @@ void status_update(void) {
 
 	/* Print status message. */
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL             (%s)", timestring);
-    mvwhline(g_window, 2, 1, 0, STATUS_WIN_W - 2);
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state.rod_depth, _draw_rod_depth(state.rod_depth), state.coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", users[state.usermode]);
-    mvwhline(g_window, 6, 1, 0, STATUS_WIN_W - 2);
 
     /* Print start of temperature line. */
     mvwprintw(g_window, 3, 1, "reactor temp: ");

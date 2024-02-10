@@ -175,6 +175,9 @@ void status_init(void) {
     box(g_window, 0, 0);
     _draw_horiz_line(2);
     _draw_horiz_line(6);
+
+    /* Set initialized flag. */
+    g_initialized = true;
 }
 
 void status_end(void) {
@@ -187,6 +190,9 @@ void status_end(void) {
 
     /* Destroy our window. */
     delwin(g_window);
+
+    /* Set initialized flag. */
+    g_initialized = false;
 }
 
 void status_update(void) {

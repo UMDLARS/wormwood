@@ -28,6 +28,9 @@ void console_init(void) {
     /* Create our window. */
     g_window = newwin(CONSOLE_WIN_H, CONSOLE_WIN_W, CONSOLE_WIN_Y, CONSOLE_WIN_X);
     assert(g_window != NULL);
+
+    /* Set initialized flag. */
+    g_initialized = true;
 }
 
 void console_end(void) {
@@ -37,6 +40,9 @@ void console_end(void) {
 
     /* Destroy our window. */
     delwin(g_window);
+
+    /* Set initialized flag. */
+    g_initialized = false;
 }
 
 void console_clear(void) { wclear(g_window); }

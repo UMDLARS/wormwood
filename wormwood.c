@@ -108,12 +108,15 @@ void print_menu(void) {
 
 		/* If authenticated, provide option to log out. */
 		console_printf("(L) - Log out\n");
-
-		console_printf("(?) - Any other choice - wait\n");
 	}
 
 	/* Always print Quit. */
 	console_printf("(Q) - Quit\n");
+
+	/* Display wait option if we're in non-realtime mode. */
+	if(!reactor_is_realtime()) {
+		console_printf("(?) - Any other choice - wait\n");
+	}
 }
 
 void set_rod_depth(void) {

@@ -31,3 +31,4 @@ void console_clear(void);
 void console_refresh_cursor(void);
 
 void console_interrupt(void);
+void console_clear_interrupt(void);

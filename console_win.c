@@ -106,3 +106,9 @@ void console_interrupt(void) {
     g_intrpt_flag = true;
     pthread_mutex_unlock(&g_intrpt_flag_mutex);
 }
+
+void console_clear_interrupt(void) {
+    pthread_mutex_lock(&g_intrpt_flag_mutex);
+    g_intrpt_flag = false;
+    pthread_mutex_unlock(&g_intrpt_flag_mutex);
+}

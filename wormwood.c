@@ -167,6 +167,20 @@ void set_flow_rate(void) {
 	}
 }
 
+void confirm_quit(void) {
+	/* Ask user to confirm that they want to quit. */
+	console_printf("Are you sure you want to quit? (Y/N)");
+	char choice = tolower(console_read_chr());
+	if(choice == ERR) { // this check isn't needed but helps with clarity.
+		return;
+	}
+
+	/* Exit if they said yes. */
+	if(choice == 'y') {
+		exit_reason = exit_reason_quit;
+	}
+}
+
 void process_choice(char choice) {
 	/* Clear console after the user enters an option. */
 	console_clear();
@@ -191,8 +205,7 @@ void process_choice(char choice) {
 			reactor_set_usermode(usermode_none);
 			break;
 		case 'q':
-			console_printf("Quitting...\n");
-			exit_reason = exit_reason_quit;
+			confirm_quit();
 			break;
 		default:
 			break;

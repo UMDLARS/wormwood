@@ -22,6 +22,8 @@ void reactor_set_usermode(usermode_t mode);
 bool reactor_get_safety(void);
 void reactor_set_safety(bool enabled);
 
+bool reactor_get_safety_active(void);
+
 unsigned char reactor_get_rod_depth(void);
 void reactor_set_rod_depth(unsigned char depth);
 
@@ -38,6 +40,7 @@ typedef struct {
     usermode_t usermode;
     char rod_depth;
     bool safety_enabled;
+    bool safety_active;
 } reactor_state_t;
 
 reactor_state_t reactor_get_state(void);

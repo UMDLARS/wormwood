@@ -232,6 +232,8 @@ void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_usermode = mode); }
 bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_safety_enabled); }
 void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_safety_enabled = enabled); }
 
+bool reactor_get_safety_active(void) { _EXCL_RETURN(bool, g_safety_active); }
+
 unsigned char reactor_get_rod_depth(void) { _EXCL_RETURN(unsigned char, g_rod_depth); }
 void reactor_set_rod_depth(unsigned char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
 
@@ -251,6 +253,7 @@ reactor_state_t reactor_get_state(void) {
 	state.usermode = g_usermode;
 	state.rod_depth = g_rod_depth;
 	state.safety_enabled = g_safety_enabled;
+	state.safety_active = g_safety_active;
 
 	_release_lock();
 

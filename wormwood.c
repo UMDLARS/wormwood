@@ -119,7 +119,7 @@ void print_menu(void) {
 }
 
 void set_rod_depth(void) {
-	unsigned char new = 0;
+	char new = 0;
 	char answer[256];
 
 	/* Ask user for rod depth. */
@@ -138,7 +138,7 @@ void set_rod_depth(void) {
 		return;
 	}
 
-	reactor_set_rod_depth((char)new);
+	reactor_set_rod_depth((unsigned char)new);
 }
 
 void set_flow_rate(void) {

@@ -4,7 +4,7 @@
 
 #define MAX_FLOW_RATE 100.0
 
-#define REACTOR_UNSAFE_DEPTH 128
+#define REACTOR_UNSAFE_DEPTH 17
 
 #define REACTOR_WARNING_TEMP 3000
 #define REACTOR_WARNING_TEMP_2 4000
@@ -22,8 +22,8 @@ void reactor_set_usermode(usermode_t mode);
 bool reactor_get_safety(void);
 void reactor_set_safety(bool enabled);
 
-char reactor_get_rod_depth(void);
-void reactor_set_rod_depth(char depth);
+unsigned char reactor_get_rod_depth(void);
+void reactor_set_rod_depth(unsigned char depth);
 
 float reactor_get_coolant_flow(void);
 void reactor_set_coolant_flow(float flow);

@@ -14,7 +14,7 @@ static usermode_t g_usermode = usermode_none;
 
 static bool g_safety_enabled = true;
 static bool g_safety_active = false;
-static char g_rod_depth = 127;
+static unsigned char g_rod_depth = 127;
 static float g_coolant_flow = 10;
 static float g_temp = 70.0;
 static float g_coolant_temp = 70.0;
@@ -231,8 +231,8 @@ void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_usermode = mode); }
 bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_safety_enabled); }
 void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_safety_enabled = enabled); }
 
-char reactor_get_rod_depth(void) { _EXCL_RETURN(char, g_rod_depth); }
-void reactor_set_rod_depth(char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
+unsigned char reactor_get_rod_depth(void) { _EXCL_RETURN(unsigned char, g_rod_depth); }
+void reactor_set_rod_depth(unsigned char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
 
 float reactor_get_coolant_flow(void) { _EXCL_RETURN(float, g_coolant_flow); }
 void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_coolant_flow = flow); }

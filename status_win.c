@@ -18,13 +18,8 @@ static pthread_mutex_t g_status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char g_depth_hist[256];
 
-static char* g_safety_string[] = {
-    "<<<DISABLED>>>",
-    "[ENABLED]",
-    "",
-};
-
 static bool g_last_safety_state = false; // default safety is true.
+static bool g_last_safety_active = false;
 
 static const int g_flash_rate = 1; // Seconds
 static bool g_enable_flash = false;
@@ -67,9 +62,32 @@ static char *_draw_rod_depth(char rod_depth) {
 	return g_depth_hist;
 }
 
-static void _set_safety_state(int state) {
+/*
+ * 0: Disabled
+ * 1: Enabled
+ * 2: Blank/Empty
+*/
+static void _set_safety_str(int state, bool active) {
+    static const char* safety_str[] = {
+        "<<<DISABLED>>>",
+        "[ENABLED]",
+        "",
+    };
+    static const char* safety_active_str[] = {
+        "Inactive",
+        "Active"
+    };
+
+    /* Print safety string. */
+    mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", safety_str[state]);
+
+    /* If safety is enabled, also print whether safety is active. */
+    if(state == 1) {
+        /* The extra two spaces at the end are a hack to fully overwrite inactive when switching to active */
+        wprintw(g_window, " (%s)  ", safety_active_str[active]);
+    }
+
     /* Update safety text. */
-    mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", g_safety_string[state]);
     wrefresh(g_window);
 }
 
@@ -94,7 +112,7 @@ static void* _safety_flash_loop(void*) {
 
         /* Toggle safety state if we're suppose to still be running, otherwise quit. */
         if(g_enable_flash) {
-            _set_safety_state(state ? 2 : 0);
+            _set_safety_str(state ? 2 : 0, false);
             console_refresh_cursor();
             state = !state;
         }
@@ -203,19 +221,25 @@ void status_update(void) {
     /* Print coolant temp. */
     mvwprintw(g_window, 3, 34, "coolant_temp: %8.2f", state.coolant_temp);
 
-    /* If safety is disabled, the safety message should flash. */
-    bool safety = reactor_get_safety();
-    if(safety != g_last_safety_state) {
-        if(!safety) {
-            _set_safety_state(0);
-            _start_safety_flash();
+    /* Switch safety string if safety has been enabled or disabled since the last update. */
+    if(state.safety_enabled != g_last_safety_state) {
+        if(state.safety_enabled) {
+            _end_safety_flash();
+            _set_safety_str(1, state.safety_active);
+            g_last_safety_active = state.safety_active;
         }
         else {
-            _end_safety_flash();
-            _set_safety_state(1);
+            _set_safety_str(0, false);
+            _start_safety_flash();
         }
 
-        g_last_safety_state = safety;
+        g_last_safety_state = state.safety_enabled;
+    }
+
+    /* Update safety string if safety is enabled and active state has changed. */
+    if(state.safety_enabled && state.safety_active != g_last_safety_active) {
+        _set_safety_str(1, state.safety_active);
+        g_last_safety_active = state.safety_active;
     }
 
     /* Update window. */

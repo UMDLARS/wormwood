@@ -14,7 +14,7 @@ static usermode_t g_usermode = usermode_none;
 
 static bool g_safety_enabled = true;
 static bool g_safety_active = false;
-static unsigned char g_rod_depth = 127;
+static unsigned char g_rod_depth = REACTOR_UNSAFE_DEPTH - 1;
 static float g_coolant_flow = 10;
 static float g_temp = 70.0;
 static float g_coolant_temp = 70.0;
@@ -208,6 +208,7 @@ static void _reactor_process_warns(void) {
 		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
 		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
 		_print_sparks();
+		console_clear_interrupt();
 		console_wait_until_press();
     }
 
@@ -220,8 +221,8 @@ static void _reactor_process_warns(void) {
 		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
 	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
+		console_clear_interrupt();
 		console_wait_until_press();
-        exit_reason = exit_reason_fail;
     }
 }
 

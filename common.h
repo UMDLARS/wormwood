@@ -11,5 +11,3 @@ typedef enum {
 } exit_reason_t;
 
 extern exit_reason_t exit_reason;
-
-extern const char *users[];

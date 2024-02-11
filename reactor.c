@@ -8,6 +8,12 @@
 #include "console_win.h"
 #include "common.h"
 
+const char* g_usermode_str[] = {
+	[usermode_none]		= "NA",
+	[usermode_oper]		= "oper",
+	[usermode_super]	= "super"
+};
+
 static pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static usermode_t g_usermode = usermode_none;
@@ -246,14 +252,15 @@ float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_coolant_temp); }
 reactor_state_t reactor_get_state(void) {
 	_aquire_lock();
 
-	reactor_state_t state;
-	state.coolant_flow = g_coolant_flow;
-	state.coolant_temp = g_coolant_temp;
-	state.temp = g_temp;
-	state.usermode = g_usermode;
-	state.rod_depth = g_rod_depth;
-	state.safety_enabled = g_safety_enabled;
-	state.safety_active = g_safety_active;
+	reactor_state_t state = {
+		.coolant_flow 	= g_coolant_flow,
+		.coolant_temp 	= g_coolant_temp,
+		.temp			= g_temp,
+		.usermode		= g_usermode,
+		.rod_depth		= g_rod_depth,
+		.safety_enabled	= g_safety_enabled,
+		.safety_active	= g_safety_active
+	};
 
 	_release_lock();
 

@@ -16,6 +16,8 @@ typedef enum {
     usermode_super
 } usermode_t;
 
+extern const char* g_usermode_str[];
+
 usermode_t reactor_get_usermode(void);
 void reactor_set_usermode(usermode_t mode);
 

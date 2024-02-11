@@ -26,11 +26,15 @@ void auth_user(void) {
 	char user_user[32];
 	char user_pass[32];
 	usermode_t userid = usermode_none;
-	char *passes[] = {"NA", "HomerSimpson", "Artemisia1986"};
+	static const char *passes[] = {
+		[usermode_none]		= "NA",
+		[usermode_oper]		= "HomerSimpson",
+		[usermode_super]	= "Artemisia1986"
+	};
 
 	/* Get username and put into user_user. */
 	console_printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
-    console_printf("Which role (%s or %s)?: ", users[1], users[2]);
+    console_printf("Which role (%s or %s)?: ", g_usermode_str[usermode_oper], g_usermode_str[usermode_super]);
 	if(!get_string(user_user)) {
 		return;
 	}
@@ -46,10 +50,10 @@ void auth_user(void) {
 	reactor_set_usermode(usermode_none);
 
 	/* Check if provided user is valid & set usermode accordingly. */
-	if (strcmp(user_user, users[1]) == 0) {
+	if (strcmp(user_user, g_usermode_str[usermode_oper]) == 0) {
 		userid = usermode_oper;
 	}
-	else if (strcmp(user_user, users[2]) == 0) {
+	else if (strcmp(user_user, g_usermode_str[usermode_super]) == 0) {
 		userid = usermode_super;
 	}
 	else {
@@ -58,6 +62,7 @@ void auth_user(void) {
 		return;
 	}
 
+	/* Check if provided password matches the one for the selected user. */
 	switch(userid) {
 		case usermode_oper:
 			if(strcmp(user_pass, passes[usermode_oper]) != 0) {
@@ -229,9 +234,9 @@ void reactor_status(void) {
 	/* Ask user for choice. */
 	usermode_t userid = reactor_get_usermode();
 	static const char* arg_str[] = {
-		[usermode_none]  = "AQ",
-		[usermode_oper]  = "ARFLQ",
-		[usermode_super] = "RFDELQ"
+		[usermode_none]		= "AQ",
+		[usermode_oper]		= "ARFLQ",
+		[usermode_super]	= "RFDELQ"
 	};
 	console_printf("Enter your selection (%s) and then press ENTER.\n", arg_str[userid]);
 	

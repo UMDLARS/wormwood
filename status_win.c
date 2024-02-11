@@ -213,7 +213,7 @@ void status_update(void) {
 	/* Print status message. */
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL             (%s)", timestring);
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state.rod_depth, _draw_rod_depth(state.rod_depth), state.coolant_flow); 
-	mvwprintw(g_window, 5, 1, "User: %-10s", users[state.usermode]);
+	mvwprintw(g_window, 5, 1, "User: %-10s", g_usermode_str[state.usermode]);
 
     /* Print start of temperature line. */
     mvwprintw(g_window, 3, 1, "reactor temp: ");

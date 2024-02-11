@@ -226,8 +226,16 @@ void reactor_status(void) {
 	/* Print menu and get/perform operation. */
 	print_menu();
 
+	/* Ask user for choice. */
+	usermode_t userid = reactor_get_usermode();
+	static const char* arg_str[] = {
+		[usermode_none]  = "AQ",
+		[usermode_oper]  = "ARFLQ",
+		[usermode_super] = "RFDELQ"
+	};
+	console_printf("Enter your selection (%s) and then press ENTER.\n", arg_str[userid]);
+	
 	/* Read choice. */
-	console_printf("Enter your selection (ARFDELQ) and then press ENTER.\n");
 	char choice = tolower(console_read_chr());
 	if(choice != ERR) {
 		/* Process choice. */

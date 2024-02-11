@@ -1,9 +1,8 @@
 #include "reactor.h"
 #include <assert.h>
 #include <errno.h>
-#include <stdint.h>
+#include <pthread.h>
 #include <stdlib.h>
-#include <string.h>
 #include "status_win.h"
 #include "console_win.h"
 #include "common.h"
@@ -34,8 +33,8 @@ static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct {
-    uint temp_error : 1;
-    uint rupture_error :1;
+    unsigned int temp_error : 1;
+    unsigned int rupture_error :1;
 } g_warnings;
 
 void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }

@@ -4,8 +4,6 @@
 #include <ncurses.h>
 #include <pthread.h>
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include "common.h"
 #include "console_win.h"
 #include "reactor.h"

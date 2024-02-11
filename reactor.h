@@ -1,6 +1,5 @@
 #pragma once
 #include <stdbool.h>
-#include <pthread.h>
 
 #define MAX_FLOW_RATE 100.0
 

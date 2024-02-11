@@ -1,6 +1,5 @@
 #pragma once
 #include <stdbool.h>
-#include <stddef.h>
 
 #define CONSOLE_WIN_X 0
 #define CONSOLE_WIN_Y 10

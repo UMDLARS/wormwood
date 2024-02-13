@@ -12,10 +12,11 @@
 typedef enum {
     usermode_none = 0,
     usermode_oper,
-    usermode_super
+    usermode_super,
+    usermode_count
 } usermode_t;
 
-extern const char* g_usermode_str[];
+extern const char* g_usermode_str[usermode_count];
 
 usermode_t reactor_get_usermode(void);
 void reactor_set_usermode(usermode_t mode);
@@ -34,12 +35,21 @@ void reactor_set_coolant_flow(float flow);
 float reactor_get_temp(void);
 float reactor_get_coolant_temp(void);
 
+
+/* Don't worry about anything below here :) */
+
 typedef struct {
+    unsigned int temp_error : 1;
+    unsigned int rupture_error :1;
+} warnings_t;
+
+typedef struct {
+    usermode_t usermode;
+    warnings_t warns;
+    float temp;
     float coolant_flow;
     float coolant_temp;
-    float temp;
-    usermode_t usermode;
-    char rod_depth;
+    unsigned char rod_depth;
     bool safety_enabled;
     bool safety_active;
 } reactor_state_t;
@@ -48,8 +58,12 @@ reactor_state_t reactor_get_state(void);
 
 void reactor_update(void);
 
-void reactor_set_realtime_enabled(bool enabled);
-bool reactor_is_realtime(void);
+typedef enum {
+    reactor_mode_norealtime,
+    reactor_mode_realtime,
+    reactor_mode_count
+} reactor_mode_t;
 
-void reactor_start_realtime_update(void);
-void reactor_end_realtime_update(void);
+void reactor_init(reactor_mode_t mode);
+void reactor_end(void);
+reactor_mode_t reactor_get_mode(void);

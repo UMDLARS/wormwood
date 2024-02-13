@@ -7,35 +7,40 @@
 #include "console_win.h"
 #include "common.h"
 
-const char* g_usermode_str[] = {
+const char* g_usermode_str[usermode_count] = {
 	[usermode_none]		= "NA",
 	[usermode_oper]		= "oper",
 	[usermode_super]	= "super"
 };
 
+static bool g_initialized = false;
+
 static pthread_mutex_t g_reactor_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static usermode_t g_usermode = usermode_none;
+/* Reactor config. */
+static reactor_mode_t g_mode = reactor_mode_norealtime;
 
-static bool g_safety_enabled = true;
-static bool g_safety_active = false;
-static unsigned char g_rod_depth = REACTOR_UNSAFE_DEPTH - 1;
-static float g_coolant_flow = 10;
-static float g_temp = 70.0;
-static float g_coolant_temp = 70.0;
+/* Default reactor state. */
+static const reactor_state_t g_default_state = {
+	.usermode		= usermode_none,
+	.warns			= {0,0},
+	.temp			= 70.0,
+	.coolant_flow	= 10.0,
+	.coolant_temp	= 70.0,
+	.rod_depth		= REACTOR_UNSAFE_DEPTH - 1,
+	.safety_enabled	= true,
+	.safety_active	= false,
+};
+
+/* Reactor state. */
+static reactor_state_t g_state;
 
 /* Realtime mode variables. */
-static bool g_is_realtime = false;
 static const int g_realtime_update_rate = 2; // Seconds
 static bool g_realtime_active;
 static pthread_t g_realtime_thread;
 static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static struct {
-    unsigned int temp_error : 1;
-    unsigned int rupture_error :1;
-} g_warnings;
 
 void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
 void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mutex) == 0); }
@@ -104,8 +109,8 @@ static void _update_impl(void) {
 	 */
 
 	/* Fail/throw error if reactor temp goes over 5K. */
-	if (g_temp >= REACTOR_EXPLODE_TEMP) {
-        g_warnings.temp_error = true;
+	if (g_state.temp >= REACTOR_EXPLODE_TEMP) {
+        g_state.warns.temp_error = true;
         exit_reason = exit_reason_fail;
 		console_interrupt();
 		return;
@@ -113,54 +118,54 @@ static void _update_impl(void) {
 
 	/* COOLANT FLOW HEAT REDUCTION. */
 	/* Coolant flow reduces reactor temp. */
-	if (g_temp > 70) {
-		g_temp = g_temp - ((g_coolant_flow * _float_up_to(7)));
+	if (g_state.temp > 70) {
+		g_state.temp = g_state.temp - ((g_state.coolant_flow * _float_up_to(7)));
 	}
 
 	/* Coolant temp follows the reactor temp, but at a delay. */
-	g_coolant_temp = g_coolant_temp + ((g_temp - g_coolant_temp) * .15);
+	g_state.coolant_temp = g_state.coolant_temp + ((g_state.temp - g_state.coolant_temp) * .15);
 
 	/* Reactor cannot get below room temp. */
-	if (g_temp < 70) {
-		g_temp = 70;
+	if (g_state.temp < 70) {
+		g_state.temp = 70;
 	}
 
 	/* Fuzz the reactor temp a bit for realism. */
-	g_temp = g_temp + _get_fuzz() * _rand_sign();
+	g_state.temp = g_state.temp + _get_fuzz() * _rand_sign();
 
 	/* RETRACTING THE RODS INCREASES THE TEMP */
 	/* for each unit the rod is not fully extracted, add a random float up to 50. */
 	float bump = 0;
 	int i;
-	int rod_factor = REACTOR_UNSAFE_DEPTH - 1 - g_rod_depth;
+	int rod_factor = REACTOR_UNSAFE_DEPTH - 1 - g_state.rod_depth;
 
 	for (i = rod_factor; i > 0; i--) {
 		bump = bump + _float_up_to(20);
 	}
-	g_temp = g_temp + bump;
+	g_state.temp = g_state.temp + bump;
 
 	/* SAFETY PROTOCOLS */
-	if (g_safety_enabled == true && g_temp > 2000) {
-		g_safety_active = 1;
-		if (g_rod_depth < REACTOR_UNSAFE_DEPTH - 1) {
-			/* Automatically increment g_rod_depth to cool reactor. */
-			g_rod_depth++;
+	if (g_state.safety_enabled == true && g_state.temp > 2000) {
+		g_state.safety_active = 1;
+		if (g_state.rod_depth < REACTOR_UNSAFE_DEPTH - 1) {
+			/* Automatically increment g_state.rod_depth to cool reactor. */
+			g_state.rod_depth++;
 		}
 
-		if (g_coolant_flow <= MAX_FLOW_RATE) {
-			g_coolant_flow = g_coolant_flow + 1;
-			if (g_coolant_flow > MAX_FLOW_RATE) {
-				g_coolant_flow = MAX_FLOW_RATE;
+		if (g_state.coolant_flow <= MAX_FLOW_RATE) {
+			g_state.coolant_flow = g_state.coolant_flow + 1;
+			if (g_state.coolant_flow > MAX_FLOW_RATE) {
+				g_state.coolant_flow = MAX_FLOW_RATE;
 			}
 		}
 	}
 
-	if (g_safety_active == 1 && g_temp < 2000) {
-		g_safety_active = 0;
+	if (g_state.safety_active == 1 && g_state.temp < 2000) {
+		g_state.safety_active = 0;
 	}
 
-	if(g_rod_depth < 0 || g_rod_depth >= REACTOR_UNSAFE_DEPTH) {
-		g_warnings.rupture_error = true;
+	if(g_state.rod_depth < 0 || g_state.rod_depth >= REACTOR_UNSAFE_DEPTH) {
+		g_state.warns.rupture_error = true;
 		exit_reason = exit_reason_fail;
 		console_interrupt();
 	}
@@ -204,90 +209,9 @@ static void* _realtime_reactor_loop(void*) {
     return NULL;
 }
 
-static void _reactor_process_warns(void) {
-    /* Check if we've overheated. */
-    if(g_warnings.temp_error) {
-		console_clear();
-		_print_sparks();
-		console_printf("****** COOLANT VAPORIZATION *******\n");
-		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
-		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
-		_print_sparks();
-		console_clear_interrupt();
-		console_wait_until_press();
-    }
-
-    /* Check if a rupture has occurred. */
-    if(g_warnings.rupture_error) {
-		console_clear();
-		_print_sparks();
-		console_printf("WARNING! WARNING! WARNING!\n");
-		console_printf("CONTAINMENT VESSEL RUPTURE!\n");
-		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
-	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
-		_print_sparks();
-		console_clear_interrupt();
-		console_wait_until_press();
-    }
-}
-
-usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_usermode); }
-void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_usermode = mode); }
-
-bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_safety_enabled); }
-void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_safety_enabled = enabled); }
-
-bool reactor_get_safety_active(void) { _EXCL_RETURN(bool, g_safety_active); }
-
-unsigned char reactor_get_rod_depth(void) { _EXCL_RETURN(unsigned char, g_rod_depth); }
-void reactor_set_rod_depth(unsigned char depth) { _EXCL_ACCESS(g_rod_depth = depth); }
-
-float reactor_get_coolant_flow(void) { _EXCL_RETURN(float, g_coolant_flow); }
-void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_coolant_flow = flow); }
-
-float reactor_get_temp(void) { _EXCL_RETURN(float, g_temp); }
-float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_coolant_temp); }
-
-reactor_state_t reactor_get_state(void) {
-	_aquire_lock();
-
-	reactor_state_t state = {
-		.coolant_flow 	= g_coolant_flow,
-		.coolant_temp 	= g_coolant_temp,
-		.temp			= g_temp,
-		.usermode		= g_usermode,
-		.rod_depth		= g_rod_depth,
-		.safety_enabled	= g_safety_enabled,
-		.safety_active	= g_safety_active
-	};
-
-	_release_lock();
-
-	return state;
-}
-
-void reactor_update(void) {
-    _aquire_lock();
-
-    /* If we're not in realtime mode, perform an update. */
-    if(!reactor_is_realtime()) {
-        _update_impl();
-    }
-
-    /* Process any warnings. */
-    _reactor_process_warns();
-
-    _release_lock();
-
-    /* Update status window. */
-    status_update();
-}
-
-void reactor_set_realtime_enabled(bool enabled) { g_is_realtime = enabled; }
-bool reactor_is_realtime(void) { return g_is_realtime; }
-
-void reactor_start_realtime_update(void) {
-    if(g_realtime_active) {
+static void _start_realtime_update(void) {
+	/* Do nothing if already started or not in realtime mode. */
+    if(g_realtime_active || g_mode != reactor_mode_realtime) {
         return;
     }
 
@@ -298,7 +222,7 @@ void reactor_start_realtime_update(void) {
     assert(pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL) == 0);
 }
 
-void reactor_end_realtime_update(void) {
+static void _end_realtime_update(void) {
     if(!g_realtime_active) {
         return;
     }
@@ -314,3 +238,119 @@ void reactor_end_realtime_update(void) {
     /* Wait for thread to finish. */
     assert(pthread_join(g_realtime_thread, NULL) == 0);
 }
+
+static void _reactor_process_warns(void) {
+    /* Check if we've overheated. */
+    if(g_state.warns.temp_error) {
+		console_clear();
+		_print_sparks();
+		console_printf("****** COOLANT VAPORIZATION *******\n");
+		console_printf("****** CONTAINMENT VESSEL VENTING *******\n");
+		console_printf("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
+		_print_sparks();
+		console_clear_interrupt();
+		console_wait_until_press();
+    }
+
+    /* Check if a rupture has occurred. */
+    if(g_state.warns.rupture_error) {
+		console_clear();
+		_print_sparks();
+		console_printf("WARNING! WARNING! WARNING!\n");
+		console_printf("CONTAINMENT VESSEL RUPTURE!\n");
+		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
+	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
+		_print_sparks();
+		console_clear_interrupt();
+		console_wait_until_press();
+    }
+}
+
+usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_state.usermode); }
+void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_state.usermode = mode); }
+
+bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_state.safety_enabled); }
+void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_state.safety_enabled = enabled); }
+
+bool reactor_get_safety_active(void) { _EXCL_RETURN(bool, g_state.safety_active); }
+
+unsigned char reactor_get_rod_depth(void) { _EXCL_RETURN(unsigned char, g_state.rod_depth); }
+void reactor_set_rod_depth(unsigned char depth) { _EXCL_ACCESS(g_state.rod_depth = depth); }
+
+float reactor_get_coolant_flow(void) { _EXCL_RETURN(float, g_state.coolant_flow); }
+void reactor_set_coolant_flow(float flow) { _EXCL_ACCESS(g_state.coolant_flow = flow); }
+
+float reactor_get_temp(void) { _EXCL_RETURN(float, g_state.temp); }
+float reactor_get_coolant_temp(void) { _EXCL_RETURN(float, g_state.coolant_temp); }
+
+reactor_state_t reactor_get_state(void) {
+	_aquire_lock();
+	reactor_state_t state = g_state;
+	_release_lock();
+	return state;
+}
+
+void reactor_update(void) {
+    _aquire_lock();
+
+    /* If we're in norealtime mode, perform an update. */
+    if(g_mode == reactor_mode_norealtime) {
+        _update_impl();
+    }
+
+    /* Process any warnings. */
+    _reactor_process_warns();
+
+    _release_lock();
+
+    /* Update status window. */
+    status_update();
+}
+
+void reactor_init(reactor_mode_t mode) {
+	/* Do nothing if we're initialized. */
+	if(g_initialized) {
+		return;
+	}
+
+	/* Set default state. */
+	g_state = g_default_state;
+
+	/* Set mode. */
+	g_mode = mode;
+
+	/* Perform mode specific init. */
+	switch(mode) {
+		case reactor_mode_norealtime:
+			break;
+		case reactor_mode_realtime:
+			_start_realtime_update();
+			break;
+		default:
+			break;
+	}
+
+	g_initialized = true;
+}
+
+void reactor_end(void) {
+	/* Do nothing if we aren't initialized. */
+	if(!g_initialized) {
+		return;
+	}
+
+	/* Perform mode specific deinit. */
+	switch(g_mode) {
+		case reactor_mode_norealtime:
+			break;
+		case reactor_mode_realtime:
+			_end_realtime_update();
+			break;
+		default:
+			break;
+	}
+
+	g_initialized = false;
+}
+
+reactor_mode_t reactor_get_mode(void) { return g_mode; }

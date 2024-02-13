@@ -116,8 +116,8 @@ void print_menu(void) {
 	/* Always print Quit. */
 	console_printf("(Q) - Quit\n");
 
-	/* Display wait option if we're in non-realtime mode. */
-	if(!reactor_is_realtime()) {
+	/* Display wait option if we're in norealtime mode. */
+	if(reactor_get_mode() == reactor_mode_norealtime) {
 		console_printf("(?) - Any other choice - wait\n");
 	}
 }
@@ -252,6 +252,12 @@ void reactor_status(void) {
 }
 
 int main(int argc, char *argv[]) {
+	/* Get reactor mode. */
+	reactor_mode_t mode = reactor_mode_norealtime; // default to norealtime
+	if(argc >= 2 && !strcmp(argv[1], "realtime")) {
+		mode = reactor_mode_realtime;
+	}
+
 	/* Initialize ncurses. */
 	initscr();
 	start_color();
@@ -265,18 +271,11 @@ int main(int argc, char *argv[]) {
 	status_init();
 	console_init();
 
+	/* Initialize reactor is previously obtained mode. */
+	reactor_init(mode);
+
 	/* Perform initial status update. */
 	status_update();
-
-	/* Enable realtime mode if the first argument is "realtime". */
-	if(argc >= 2 && !strcmp(argv[1], "realtime")) {
-		reactor_set_realtime_enabled(true);
-	}
-
-	/* Start realtime reactor loop. */
-	if(reactor_is_realtime()) {
-		reactor_start_realtime_update();
-	}
 
 	/* Seed RNG with time. */
 	srand(time(NULL));
@@ -288,8 +287,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	/* End realtime reactor loop. */
-	reactor_end_realtime_update(); // noop if non-realtime.
+	/* Finalize reactor. */
+	reactor_end();
 
 	/* Finalize windows. */
 	status_end();

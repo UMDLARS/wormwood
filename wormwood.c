@@ -253,9 +253,18 @@ void reactor_status(void) {
 
 int main(int argc, char *argv[]) {
 	/* Get reactor mode. */
-	reactor_mode_t mode = reactor_mode_norealtime; // default to norealtime
-	if(argc >= 2 && !strcmp(argv[1], "realtime")) {
-		mode = reactor_mode_realtime;
+	reactor_mode_t mode = reactor_mode_realtime; // default to realtime
+	if(argc >= 2) {
+		if(!strcmp(argv[1], "realtime")) {
+			mode = reactor_mode_realtime;
+		}
+		else if(!strcmp(argv[1], "norealtime")) {
+			mode = reactor_mode_norealtime;
+		}
+		else {
+			printf("Invalid mode %s.\n", argv[1]);
+			return -1;
+		}
 	}
 
 	/* Initialize ncurses. */

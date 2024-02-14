@@ -164,14 +164,14 @@ static void _update_impl(void) {
 		g_state.safety_active = 0;
 	}
 
-	if(g_state.rod_depth < 0 || g_state.rod_depth >= REACTOR_UNSAFE_DEPTH) {
+	if(g_state.rod_depth >= REACTOR_UNSAFE_DEPTH) { // add <0 check if we go back to signed
 		g_state.warns.rupture_error = true;
 		exit_reason = exit_reason_fail;
 		console_interrupt();
 	}
 }
 
-static void* _realtime_reactor_loop(void*) {
+static void* _realtime_reactor_loop(__attribute__((unused)) void* p) {
 	struct timespec timeout;
 	bool done = false;
 	while(!done) {

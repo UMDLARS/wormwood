@@ -79,6 +79,8 @@ void auth_user(void) {
 
 			reactor_set_usermode(userid);
 			break;
+		default:
+			break;
 	}
 
 	return;

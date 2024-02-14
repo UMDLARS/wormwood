@@ -27,35 +27,21 @@ static pthread_mutex_t g_flash_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_flash_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char *_draw_rod_depth(char rod_depth) {
-	int idx = 0;
-	int i;
-	memset(g_depth_hist, '\0', 256);
-
-	/* If depth is negative, draw to left of bracket. */
-	if (g_depth_hist < 0) {
-		i = rod_depth * -1;
-
-		for (i; i > 0; i--) {
-			g_depth_hist[idx] = '=';
-			idx++;
-		}
-	}
+	memset(g_depth_hist, '\0', sizeof(g_depth_hist));
 
 	/* Draw brackets and whitespace starting at 0. */
-	g_depth_hist[idx] = '[';
-	g_depth_hist[idx + 17] = ']';
-	idx++;
-	for (i = 0; i < 16; i++) {
-		g_depth_hist[idx + i] = ' ';
+    int max_depth = REACTOR_UNSAFE_DEPTH - 1;
+	g_depth_hist[0] = '[';
+	g_depth_hist[17] = ']';
+	for (int i = 0; i < max_depth; i++) {
+		g_depth_hist[i + 1] = ' ';
 	}
 
-	/* Depth is positive, draw to right of bracket. */
-	for (i = 0; i < rod_depth; i++) {
-		g_depth_hist[idx] = '=';
-		idx++;
-	}
-
-	/* Draw final bracket at max depth. */
+    /* If depth is positive, draw from left, otherwise from right. */
+    int idx = (rod_depth < 0 ? max_depth - rod_depth * 1 : 0) + 1;
+    for(int i = 0; i < rod_depth; i++) {
+        g_depth_hist[idx++] = '=';
+    }
 
 	return g_depth_hist;
 }
@@ -89,7 +75,7 @@ static void _set_safety_str(int state, bool active) {
 	wrefresh(g_window);
 }
 
-static void* _safety_flash_loop(void*) {
+static void* _safety_flash_loop(__attribute__((unused)) void* p) {
 	struct timespec timeout;
 	bool state = true;
 	bool done = false;
@@ -194,8 +180,6 @@ void status_end(void) {
 }
 
 void status_update(void) {
-	char depth_hist[256];
-
 	/* Aquire lock, we only want one thread updating this at a time. */
 	assert(pthread_mutex_lock(&g_status_mutex) == 0);
 

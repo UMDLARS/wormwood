@@ -38,7 +38,7 @@ static char *_draw_rod_depth(char rod_depth) {
 	}
 
     /* If depth is positive, draw from left, otherwise from right. */
-    int idx = (rod_depth < 0 ? max_depth - rod_depth * 1 : 0) + 1;
+    int idx = (rod_depth < 0 ? max_depth + rod_depth : 0) + 1;
     for(int i = 0; i < rod_depth; i++) {
         g_depth_hist[idx++] = '=';
     }

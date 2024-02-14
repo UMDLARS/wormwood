@@ -32,7 +32,7 @@ void auth_user(void) {
 
 	/* Get username and put into user_user. */
 	console_printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
-    console_printf("Which role (%s or %s)?: ", g_usermode_str[usermode_oper], g_usermode_str[usermode_super]);
+	console_printf("Which role (%s or %s)?: ", g_usermode_str[usermode_oper], g_usermode_str[usermode_super]);
 	if(!get_string(user_user)) {
 		return;
 	}

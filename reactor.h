@@ -10,10 +10,10 @@
 #define REACTOR_EXPLODE_TEMP 5000
 
 typedef enum {
-    usermode_none = 0,
-    usermode_oper,
-    usermode_super,
-    usermode_count
+	usermode_none = 0,
+	usermode_oper,
+	usermode_super,
+	usermode_count
 } usermode_t;
 
 extern const char* g_usermode_str[usermode_count];
@@ -39,19 +39,19 @@ float reactor_get_coolant_temp(void);
 /* Don't worry about anything below here :) */
 
 typedef struct {
-    unsigned int temp_error : 1;
-    unsigned int rupture_error :1;
+	unsigned int temp_error : 1;
+	unsigned int rupture_error :1;
 } warnings_t;
 
 typedef struct {
-    usermode_t usermode;
-    warnings_t warns;
-    float temp;
-    float coolant_flow;
-    float coolant_temp;
-    unsigned char rod_depth;
-    bool safety_enabled;
-    bool safety_active;
+	usermode_t usermode;
+	warnings_t warns;
+	float temp;
+	float coolant_flow;
+	float coolant_temp;
+	unsigned char rod_depth;
+	bool safety_enabled;
+	bool safety_active;
 } reactor_state_t;
 
 reactor_state_t reactor_get_state(void);
@@ -59,9 +59,9 @@ reactor_state_t reactor_get_state(void);
 void reactor_update(void);
 
 typedef enum {
-    reactor_mode_norealtime,
-    reactor_mode_realtime,
-    reactor_mode_count
+	reactor_mode_norealtime,
+	reactor_mode_realtime,
+	reactor_mode_count
 } reactor_mode_t;
 
 void reactor_init(reactor_mode_t mode);

@@ -47,17 +47,17 @@ void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mutex) == 0); 
 
 #define _EXCL_ACCESS(expr) \
 { \
-    _aquire_lock(); \
-    expr; \
-    _release_lock(); \
+	_aquire_lock(); \
+	expr; \
+	_release_lock(); \
 }
 
 #define _EXCL_RETURN(type, var) \
 { \
-    _aquire_lock(); \
-    type _val = var; \
-    _release_lock(); \
-    return _val; \
+	_aquire_lock(); \
+	type _val = var; \
+	_release_lock(); \
+	return _val; \
 }
 
 static float _float_up_to(int max) {
@@ -110,8 +110,8 @@ static void _update_impl(void) {
 
 	/* Fail/throw error if reactor temp goes over 5K. */
 	if (g_state.temp >= REACTOR_EXPLODE_TEMP) {
-        g_state.warns.temp_error = true;
-        exit_reason = exit_reason_fail;
+		g_state.warns.temp_error = true;
+		exit_reason = exit_reason_fail;
 		console_interrupt();
 		return;
 	}
@@ -172,76 +172,76 @@ static void _update_impl(void) {
 }
 
 static void* _realtime_reactor_loop(void*) {
-    struct timespec timeout;
-    bool done = false;
-    while(!done) {
-        /* Get current time and add [g_realtime_update_rate] sec. */
-        timespec_get(&timeout, TIME_UTC);
-        timeout.tv_sec += g_realtime_update_rate;
+	struct timespec timeout;
+	bool done = false;
+	while(!done) {
+		/* Get current time and add [g_realtime_update_rate] sec. */
+		timespec_get(&timeout, TIME_UTC);
+		timeout.tv_sec += g_realtime_update_rate;
 
-        /* Wait until we're interrupted or X seconds pass. */
-        int res = 0;
-        while(res != ETIMEDOUT && g_realtime_active) {
-            res = pthread_cond_timedwait(&g_realtime_cond, &g_realtime_cond_mutex, &timeout);
-            assert(res == 0 || res == ETIMEDOUT);
-        }
+		/* Wait until we're interrupted or X seconds pass. */
+		int res = 0;
+		while(res != ETIMEDOUT && g_realtime_active) {
+			res = pthread_cond_timedwait(&g_realtime_cond, &g_realtime_cond_mutex, &timeout);
+			assert(res == 0 || res == ETIMEDOUT);
+		}
 
-        /* Aquire lock. */
-        _aquire_lock();
+		/* Aquire lock. */
+		_aquire_lock();
 
-        /* Perform update if we're suppose to still be running, otherwise quit. */
-        if(g_realtime_active) {
-            _update_impl();
-            if(exit_reason != exit_reason_none) {
-                done = true;
-            }
-        }
-        else {
-            done = true;
-        }
+		/* Perform update if we're suppose to still be running, otherwise quit. */
+		if(g_realtime_active) {
+			_update_impl();
+			if(exit_reason != exit_reason_none) {
+				done = true;
+			}
+		}
+		else {
+			done = true;
+		}
 
-        _release_lock();
+		_release_lock();
 
-        /* Update status. */
-        status_update();
-    }
+		/* Update status. */
+		status_update();
+	}
 
-    return NULL;
+	return NULL;
 }
 
 static void _start_realtime_update(void) {
 	/* Do nothing if already started or not in realtime mode. */
-    if(g_realtime_active || g_mode != reactor_mode_realtime) {
-        return;
-    }
+	if(g_realtime_active || g_mode != reactor_mode_realtime) {
+		return;
+	}
 
-    /* Set flag to enable updates. */
-    g_realtime_active = true;
+	/* Set flag to enable updates. */
+	g_realtime_active = true;
 
-    /* Start thread. */
-    assert(pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL) == 0);
+	/* Start thread. */
+	assert(pthread_create(&g_realtime_thread, NULL, _realtime_reactor_loop, NULL) == 0);
 }
 
 static void _end_realtime_update(void) {
-    if(!g_realtime_active) {
-        return;
-    }
+	if(!g_realtime_active) {
+		return;
+	}
 
-    /* Set flag to disable updates in thread. */
-    _aquire_lock();
-    g_realtime_active = false;
-    _release_lock();
+	/* Set flag to disable updates in thread. */
+	_aquire_lock();
+	g_realtime_active = false;
+	_release_lock();
 
-    /* Wake up thread. */
-    assert(pthread_cond_signal(&g_realtime_cond) == 0);
+	/* Wake up thread. */
+	assert(pthread_cond_signal(&g_realtime_cond) == 0);
 
-    /* Wait for thread to finish. */
-    assert(pthread_join(g_realtime_thread, NULL) == 0);
+	/* Wait for thread to finish. */
+	assert(pthread_join(g_realtime_thread, NULL) == 0);
 }
 
 static void _reactor_process_warns(void) {
-    /* Check if we've overheated. */
-    if(g_state.warns.temp_error) {
+	/* Check if we've overheated. */
+	if(g_state.warns.temp_error) {
 		console_clear();
 		_print_sparks();
 		console_printf("****** COOLANT VAPORIZATION *******\n");
@@ -250,20 +250,20 @@ static void _reactor_process_warns(void) {
 		_print_sparks();
 		console_clear_interrupt();
 		console_wait_until_press();
-    }
+	}
 
-    /* Check if a rupture has occurred. */
-    if(g_state.warns.rupture_error) {
+	/* Check if a rupture has occurred. */
+	if(g_state.warns.rupture_error) {
 		console_clear();
 		_print_sparks();
 		console_printf("WARNING! WARNING! WARNING!\n");
 		console_printf("CONTAINMENT VESSEL RUPTURE!\n");
 		console_printf("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
-	    console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
+		console_printf("RADIATION LEAK - EVACUATE THE AREA!\n\n");
 		_print_sparks();
 		console_clear_interrupt();
 		console_wait_until_press();
-    }
+	}
 }
 
 usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_state.usermode); }
@@ -291,20 +291,20 @@ reactor_state_t reactor_get_state(void) {
 }
 
 void reactor_update(void) {
-    _aquire_lock();
+	_aquire_lock();
 
-    /* If we're in norealtime mode, perform an update. */
-    if(g_mode == reactor_mode_norealtime) {
-        _update_impl();
-    }
+	/* If we're in norealtime mode, perform an update. */
+	if(g_mode == reactor_mode_norealtime) {
+		_update_impl();
+	}
 
-    /* Process any warnings. */
-    _reactor_process_warns();
+	/* Process any warnings. */
+	_reactor_process_warns();
 
-    _release_lock();
+	_release_lock();
 
-    /* Update status window. */
-    status_update();
+	/* Update status window. */
+	status_update();
 }
 
 void reactor_init(reactor_mode_t mode) {

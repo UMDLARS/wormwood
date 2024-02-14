@@ -42,8 +42,8 @@ static pthread_t g_realtime_thread;
 static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
-void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mutex) == 0); }
+static void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mutex) == 0); }
+static void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mutex) == 0); }
 
 #define _EXCL_ACCESS(expr) \
 { \

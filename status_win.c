@@ -124,7 +124,7 @@ static void* _safety_flash_loop(void*) {
 	return NULL;
 }
 
-void _start_safety_flash(void) {
+static void _start_safety_flash(void) {
 	if(g_enable_flash) {
 		return;
 	}
@@ -133,7 +133,7 @@ void _start_safety_flash(void) {
 	assert(pthread_create(&g_flash_thread, NULL, _safety_flash_loop, NULL) == 0);
 }
 
-void _end_safety_flash(void) {
+static void _end_safety_flash(void) {
 	if(!g_enable_flash) {
 		return;
 	}
@@ -148,13 +148,13 @@ void _end_safety_flash(void) {
 	assert(pthread_join(g_flash_thread, NULL) == 0);
 }
 
-void _draw_horiz_line(int y) {
+static void _draw_horiz_line(int y) {
 	mvwaddch(g_window, y, 0, ACS_LTEE);
 	mvwhline(g_window, y, 1, 0, STATUS_WIN_W - 2);
 	mvwaddch(g_window, y, STATUS_WIN_W - 1, ACS_RTEE);
 }
 
-void _draw_vert_line(int x) { // untested
+static void _draw_vert_line(int x) { // untested
 	mvwaddch(g_window, 0, x, ACS_TTEE);
 	mvwvline(g_window, 1, x, 0, STATUS_WIN_H - 2);
 	mvwaddch(g_window, STATUS_WIN_H - 1, x, ACS_BTEE);

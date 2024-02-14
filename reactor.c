@@ -210,12 +210,8 @@ static void* _realtime_reactor_loop(void*) {
 }
 
 static void _start_realtime_update(void) {
-	/* Do nothing if already started or not in realtime mode. */
-	if(g_realtime_active || g_mode != reactor_mode_realtime) {
-		return;
-	}
-
 	/* Set flag to enable updates. */
+	assert(g_realtime_active == false);
 	g_realtime_active = true;
 
 	/* Start thread. */
@@ -223,12 +219,9 @@ static void _start_realtime_update(void) {
 }
 
 static void _end_realtime_update(void) {
-	if(!g_realtime_active) {
-		return;
-	}
-
 	/* Set flag to disable updates in thread. */
 	_aquire_lock();
+	assert(g_realtime_active == true);
 	g_realtime_active = false;
 	_release_lock();
 

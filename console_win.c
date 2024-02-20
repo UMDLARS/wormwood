@@ -25,6 +25,8 @@ static bool _get_and_clear_intrpt(void) {
 
 static int _get_char_impl(void) {
 	int out;
+
+	/* Wait until we don't hit the timeout or until we get interrupted. */
 	do {
 		out = wgetch(g_window);
 		if(_get_and_clear_intrpt()) {
@@ -35,12 +37,22 @@ static int _get_char_impl(void) {
 	return out;
 }
 
+void _add_pos_to_coord(int* y_out, int* x_out, int pos, int y, int x) {
+	pos += x;
+	*x_out = pos % CONSOLE_WIN_W;
+	*y_out = y + (pos / CONSOLE_WIN_W);
+}
+
 void _insert_char_into_str(char* str, int pos, int len) {
 }
 
 void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
-	wmove(g_window, y, x + start_pos);
+	/* Position the cursor to provided coords + start_pos. */
+	int new_y, new_x;
+	_add_pos_to_coord(&new_y, &new_x, start_pos, y, x);
+	wmove(g_window, new_y, new_x);
 
+	/* Shift each character back my one. */
 	int pos = start_pos;
 	while(pos < len - 1 && str[pos] != 0) {
 		str[pos] = str[pos + 1];
@@ -51,7 +63,8 @@ void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
 	}
 	waddch(g_window, ' ');
 
-	wmove(g_window, y, x + start_pos);
+	/* Move cursor backt o original location. */
+	wmove(g_window, new_y, new_x);
 }
 
 void console_init(void) {

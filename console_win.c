@@ -81,7 +81,7 @@ static void _shift_str_forward(char* str, int start_pos, int len, int x, int y) 
 	_move_cursor_with_offset(start_pos, y, x);
 }
 
-void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
+static void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
 	/* Position the cursor to provided coords + start_pos. */
 	_move_cursor_with_offset(start_pos, y, x);
 
@@ -101,7 +101,7 @@ void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
 	_move_cursor_with_offset(start_pos, y, x);
 }
 
-void _insert_char_into_str(char ch, char* str, int start_pos, int len, int x, int y) {
+static void _insert_char_into_str(char ch, char* str, int start_pos, int len, int x, int y) {
 	/* Shift string forward. */
 	_shift_str_forward(str, start_pos, len, x, y);
 
@@ -210,7 +210,6 @@ bool console_read_strn(char* out, int max_len) {
 				break;
 			case KEY_RIGHT:
 				if(pos < cur_size) {
-					//exit(0);
 					_shift_cursor(1);
 					++pos;
 				}

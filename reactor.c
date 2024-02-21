@@ -36,7 +36,7 @@ static const reactor_state_t g_default_state = {
 static reactor_state_t g_state;
 
 /* Realtime mode variables. */
-static const int g_realtime_update_rate = 2; // Seconds
+static const int g_realtime_update_rate = 1; // Seconds
 static bool g_realtime_active;
 static pthread_t g_realtime_thread;
 static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;

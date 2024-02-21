@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <ncurses.h>
 #include <pthread.h>
+#include <string.h>
 
 #include <stdlib.h>
 
@@ -37,24 +38,57 @@ static int _get_char_impl(void) {
 	return out;
 }
 
-void _add_pos_to_coord(int* y_out, int* x_out, int pos, int y, int x) {
+static void _add_pos_to_coord(int* y_out, int* x_out, int pos, int y, int x) {
 	pos += x;
 	*x_out = pos % CONSOLE_WIN_W;
 	*y_out = y + (pos / CONSOLE_WIN_W);
 }
 
-void _insert_char_into_str(char* str, int pos, int len) {
+static void _move_cursor_with_offset(int amm, int y, int x) {
+	int new_y, new_x;
+	_add_pos_to_coord(&new_y, &new_x, amm, y, x);
+	wmove(g_window, new_y, new_x);
+}
+
+static void _shift_cursor(int amm) {
+	int y, x;
+	getyx(g_window, y, x);
+	_move_cursor_with_offset(amm, y, x);
+}
+
+static void _shift_str_forward(char* str, int start_pos, int len, int x, int y) {
+	/* Position the cursor to provided coords + start_pos. */
+	_move_cursor_with_offset(start_pos + 1, y, x);
+
+	/* Shift each character forward by one. */
+	int end = strnlen(str, len) + 1;
+	int pos = start_pos;
+	char p1 = str[pos];
+	char p2;
+	while(pos + 1 < end) {
+		p2 = str[pos + 1];
+		str[pos + 1] = p1;
+		if(p1 != 0) {
+			waddch(g_window, p1);
+		}
+		pos++;
+		p1 = p2;
+	}
+
+	str[pos + 1] = 0;
+
+	/* Move cursor backt o original location. */
+	_move_cursor_with_offset(start_pos, y, x);
 }
 
 void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
 	/* Position the cursor to provided coords + start_pos. */
-	int new_y, new_x;
-	_add_pos_to_coord(&new_y, &new_x, start_pos, y, x);
-	wmove(g_window, new_y, new_x);
+	_move_cursor_with_offset(start_pos, y, x);
 
-	/* Shift each character back my one. */
+	/* Shift each character back by one. */
+	int end = strnlen(str, len) + 1;
 	int pos = start_pos;
-	while(pos < len - 1 && str[pos] != 0) {
+	while(pos + 1 < end) {
 		str[pos] = str[pos + 1];
 		if(str[pos] != 0) {
 			waddch(g_window, str[pos]);
@@ -63,8 +97,20 @@ void _shift_str_backward(char* str, int start_pos, int len, int x, int y) {
 	}
 	waddch(g_window, ' ');
 
-	/* Move cursor backt o original location. */
-	wmove(g_window, new_y, new_x);
+	/* Move cursor back to original location. */
+	_move_cursor_with_offset(start_pos, y, x);
+}
+
+void _insert_char_into_str(char ch, char* str, int start_pos, int len, int x, int y) {
+	/* Shift string forward. */
+	_shift_str_forward(str, start_pos, len, x, y);
+
+	/* Position the cursor to provided coords + start_pos. */
+	_move_cursor_with_offset(start_pos, y, x);
+
+	/* Insert new character. */
+	str[start_pos] = ch;
+	waddch(g_window, ch);
 }
 
 void console_init(void) {
@@ -77,6 +123,7 @@ void console_init(void) {
 	assert(g_window != NULL);
 
 	/* Disable echoing. */
+	keypad(g_window, true);
 	noecho();
 
 	/* Set initialized flag. */
@@ -125,6 +172,9 @@ bool console_read_strn(char* out, int max_len) {
 	int start_x, start_y;
 	getyx(g_window, start_y, start_x);
 
+	/* Clear string. */
+	out[0] = 0;
+
 	while(pos < max_len - 1 && !done) {
 		ch = _get_char_impl();
 
@@ -140,16 +190,40 @@ bool console_read_strn(char* out, int max_len) {
 			case '\b':
 			case 127:
 				/* Remove char at previous position. */
-				_shift_str_backward(out, pos - 1, max_len, start_x, start_y);
-				--pos;
+				if(pos > 0) {
+					_shift_str_backward(out, pos - 1, max_len, start_x, start_y);
+					--pos;
+					--cur_size;
+				}
+				break;
+			case KEY_DC:
+				if(pos < cur_size) {
+					_shift_str_backward(out, pos, max_len, start_x, start_y);
+					--cur_size;
+				}
+				break;
+			case KEY_LEFT:
+				if(pos > 0) {
+					_shift_cursor(-1);
+					--pos;
+				}
+				break;
+			case KEY_RIGHT:
+				if(pos < cur_size) {
+					//exit(0);
+					_shift_cursor(1);
+					++pos;
+				}
 				break;
 			default:
 				/* Add char to buffer. */
-				waddch(g_window, ch);
-				out[pos++] = ch;
-				cur_size++;
+				_insert_char_into_str(ch, out, pos, max_len, start_x, start_y);
+				++pos;
+				++cur_size;
 				break;
 		}
+
+		wrefresh(g_window);
 	}
 
 	out[cur_size] = 0;

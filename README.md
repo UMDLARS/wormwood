@@ -105,7 +105,9 @@ Make the nuclear reactor quit with a failure using each of the four vulnerabilit
 
 ### remediation
 
-Fix the source code so that it still functions normally, but:
+To fix the vulnerabilities you will only need to modify `wormwood.c`, but it may also be useful to take a look at the `console_win.h` header to get an idea of what the `console_` functions do.
+
+Fix the source code in `wormwood.c` so that it still functions normally, but:
  1. Buffer overflows are no longer possible (i.e., make sure that writes to a buffer cannot use more space than the buffer has)
  2. Add validation code and/or change the types of the variables so that integer overflow / sign issues do not lead to failures.
  3. Format string vulnerabilities are no longer possible (i.e., don't use user data directly in `printf` statements)

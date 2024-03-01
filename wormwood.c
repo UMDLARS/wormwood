@@ -119,6 +119,7 @@ void set_rod_depth(void) {
 	/* Ask user for rod depth. */
 	console_printf("What should the new rod depth be (0-16)?: ");
 	if(!get_string(answer)) {
+		/* Return on failure. */
 		return;
 	}
 
@@ -143,17 +144,20 @@ void set_flow_rate(void) {
 	/* Ask user for flow rate. */
 	console_printf("What should the new flow rate be (0.0-100.0)?: ");
 	if(!get_string(answer)) {
+		/* Return on failure. */
 		return;
 	}
 
 	/* Convert flow rate to a float. */
 	new = atof(answer);
 
+	/* Make sure flow rate isn't too high. */
 	if (new > MAX_FLOW_RATE) {
 		console_printf("New flow rate (%03.2f) is greater than max %03.2f -- ignoring!\n", new, MAX_FLOW_RATE);
 		console_wait_until_press();
 	}
 
+	/* Make sure flow rate doesn't go below 10 for oper user. */
 	if (new < 10 && userid < usermode_super) {
 		console_printf("User 'oper' cannot set flow rate below 10! -- ignoring!\n");
 		console_wait_until_press();
@@ -216,7 +220,7 @@ void reactor_status(void) {
 	/* Clear console. */
 	console_clear();
 
-	/* Print menu and get/perform operation. */
+	/* Print menu. */
 	print_menu();
 
 	/* Ask user for choice. */
@@ -231,7 +235,7 @@ void reactor_status(void) {
 	/* Read choice. */
 	char choice = tolower(console_read_chr());
 	if(choice != ERR) {
-		/* Process choice. */
+		/* Process choice if no error occurs. */
 		process_choice(choice);
 	}
 

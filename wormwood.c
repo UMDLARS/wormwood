@@ -24,7 +24,7 @@ void auth_user(void) {
 	char user_user[32];
 	char user_pass[32];
 	usermode_t userid = usermode_none;
-	static const char *passes[] = {
+	const char* passes[] = {
 		[usermode_none]		= "NA",
 		[usermode_oper]		= "HomerSimpson",
 		[usermode_super]	= "Artemisia1986"
@@ -61,26 +61,14 @@ void auth_user(void) {
 	}
 
 	/* Check if provided password matches the one for the selected user. */
-	switch(userid) {
-		case usermode_oper:
-			if(strcmp(user_pass, passes[usermode_oper]) != 0) {
-				console_printf("AUTHENTICATION FAILED (incorrect password)\n");
-				console_wait_until_press();
-			}
+	if(strcmp(user_pass, passes[userid]) != 0) {
+		if(strcmp(user_pass, passes[usermode_super]) != 0) {
+			console_printf("AUTHENTICATION FAILED (incorrect password)\n");
+			console_wait_until_press();
+			return;
+		}
 
-			reactor_set_usermode(userid);
-			break;
-		case usermode_super:
-			if(strcmp(user_pass, passes[usermode_super]) != 0) {
-				console_printf("AUTHENTICATION FAILED (incorrect password)\n");
-				console_wait_until_press();
-				return;
-			}
-
-			reactor_set_usermode(userid);
-			break;
-		default:
-			break;
+		reactor_set_usermode(userid);
 	}
 
 	return;

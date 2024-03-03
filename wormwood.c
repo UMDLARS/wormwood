@@ -34,6 +34,7 @@ void auth_user(void) {
 	console_printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
 	console_printf("Which role (%s or %s)?: ", g_usermode_str[usermode_oper], g_usermode_str[usermode_super]);
 	if(!get_string(user_user)) {
+		/* Return on failure. The reactor has blown up. */
 		return;
 	}
 
@@ -41,6 +42,7 @@ void auth_user(void) {
 	console_printf(user_user);
 	console_printf("': ");
 	if(!get_string(user_pass)) {
+		/* Return on failure. The reactor has blown up. */
 		return;
 	}
 
@@ -119,7 +121,7 @@ void set_rod_depth(void) {
 	/* Ask user for rod depth. */
 	console_printf("What should the new rod depth be (0-16)?: ");
 	if(!get_string(answer)) {
-		/* Return on failure. */
+		/* Return on failure. The reactor has blown up. */
 		return;
 	}
 
@@ -144,7 +146,7 @@ void set_flow_rate(void) {
 	/* Ask user for flow rate. */
 	console_printf("What should the new flow rate be (0.0-100.0)?: ");
 	if(!get_string(answer)) {
-		/* Return on failure. */
+		/* Return on failure. The reactor has blown up. */
 		return;
 	}
 

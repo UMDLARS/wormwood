@@ -16,7 +16,7 @@ void console_printf(const char* fmt, ...);
 /**
  * Read a character from the console.
  *
- * This may be interrupted if a critical error occurs (e.g. the reactor blows up), in which
+ * This may return early if a critical error occurs (e.g. the reactor blows up), in which
  * case `ERR` is returned.
  *
  * @return  single char or `ERR`. */
@@ -25,7 +25,7 @@ char console_read_chr(void);
 /**
  * Reads a string from the console (no size limit).
  *
- * This may be interrupted if a critical error occurs (e.g. the reactor blows up), in which
+ * This may return early if a critical error occurs (e.g. the reactor blows up), in which
  * case false is returned.
  *
  * @param[out] out  Location to store string.
@@ -35,7 +35,7 @@ bool console_read_str(char* out);
 /**
  * Reads a string of at most size `max_len` from the console.
  *
- * This may be interrupted if a critical error occurs (e.g. the reactor blows up), in which
+ * This may return early if a critical error occurs (e.g. the reactor blows up), in which
  * case false is returned.
  *
  * @param[out] out  Location to store string.
@@ -46,7 +46,7 @@ bool console_read_strn(char* out, int max_len);
 /**
  * Wait/Block until the user enters any key into the console.
  *
- * This may be interrupted if a critical error occurs (e.g. the reactor blows up). */
+ * This may return early if a critical error occurs (e.g. the reactor blows up). */
 void console_wait_until_press(void);
 
 /** Clear the console. */

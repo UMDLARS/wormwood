@@ -22,6 +22,9 @@ set(WW_SOURCES
     "wormwood.c"
 )
 
+add_compile_options(-fno-pie)
+add_link_options(-no-pie)
+
 # Add our executable.
 add_executable(wormwood ${WW_SOURCES} ${WW_HEADERS})
 

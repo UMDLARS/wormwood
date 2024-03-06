@@ -145,8 +145,8 @@ static void _update_impl(void) {
 	g_state.temp = g_state.temp + bump;
 
 	/* SAFETY PROTOCOLS */
-	if (g_state.safety_enabled == true && g_state.temp > 2000) {
-		g_state.safety_active = 1;
+	if (g_state.safety_enabled == true && g_state.temp > REACTOR_SAFE_TEMP) {
+		g_state.safety_active = true;
 		if (g_state.rod_depth < REACTOR_UNSAFE_DEPTH - 1) {
 			/* Automatically increment g_state.rod_depth to cool reactor. */
 			g_state.rod_depth++;
@@ -160,8 +160,8 @@ static void _update_impl(void) {
 		}
 	}
 
-	if (g_state.safety_active == 1 && g_state.temp < 2000) {
-		g_state.safety_active = 0;
+	if (g_state.safety_active == true && g_state.temp <= REACTOR_SAFE_TEMP) {
+		g_state.safety_active = false;
 	}
 
 	if(g_state.rod_depth >= REACTOR_UNSAFE_DEPTH) { // add <0 check if we go back to signed
@@ -263,7 +263,24 @@ usermode_t reactor_get_usermode(void) { _EXCL_RETURN(usermode_t, g_state.usermod
 void reactor_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_state.usermode = mode); }
 
 bool reactor_get_safety(void) { _EXCL_RETURN(bool, g_state.safety_enabled); }
-void reactor_set_safety(bool enabled) { _EXCL_ACCESS(g_state.safety_enabled = enabled); }
+void reactor_set_safety(bool enabled) {
+	_aquire_lock();
+
+	/* Set safety enabled. */
+	g_state.safety_enabled = enabled;
+	
+	/* If safety is being disabled, also deactivate safety. */
+	if(!enabled) {
+		g_state.safety_active = false;
+	}
+
+	/* If safety is being enabled and temp is above safe temp, activate safety. */
+	else if(g_state.temp > REACTOR_SAFE_TEMP) {
+		g_state.safety_active = true;
+	}
+
+	_release_lock();
+}
 
 bool reactor_get_safety_active(void) { _EXCL_RETURN(bool, g_state.safety_active); }
 

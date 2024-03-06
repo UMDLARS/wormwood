@@ -64,14 +64,12 @@ void auth_user(void) {
 
 	/* Check if provided password matches the one for the selected user. */
 	if(strcmp(user_pass, passes[userid]) != 0) {
-		if(strcmp(user_pass, passes[usermode_super]) != 0) {
-			console_printf("AUTHENTICATION FAILED (incorrect password)\n");
-			console_wait_until_press();
-			return;
-		}
-
-		reactor_set_usermode(userid);
+		console_printf("AUTHENTICATION FAILED (incorrect password)\n");
+		console_wait_until_press();
+		return;
 	}
+
+	reactor_set_usermode(userid);
 
 	return;
 }

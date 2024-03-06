@@ -7,7 +7,7 @@
 #include "console_win.h"
 #include "common.h"
 
-const char* g_usermode_str[usermode_count] = {
+const char* const g_usermode_str[usermode_count] = {
 	[usermode_none]		= "NA",
 	[usermode_oper]		= "oper",
 	[usermode_super]	= "super"

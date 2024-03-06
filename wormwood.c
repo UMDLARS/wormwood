@@ -24,7 +24,7 @@ void auth_user(void) {
 	char user_user[32];
 	char user_pass[32];
 	usermode_t userid = usermode_none;
-	const char* passes[] = {
+	const char* const passes[] = {
 		[usermode_none]		= "NA",
 		[usermode_oper]		= "HomerSimpson",
 		[usermode_super]	= "Artemisia1986"
@@ -225,7 +225,7 @@ void reactor_status(void) {
 
 	/* Ask user for choice. */
 	usermode_t userid = reactor_get_usermode();
-	static const char* arg_str[] = {
+	static const char* const arg_str[] = {
 		[usermode_none]		= "AQ",
 		[usermode_oper]		= "ARFLQ",
 		[usermode_super]	= "RFDELQ"

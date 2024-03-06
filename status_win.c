@@ -52,12 +52,12 @@ static char *_draw_rod_depth(char rod_depth) {
  * 2: Blank/Empty
 */
 static void _set_safety_str(int state, bool active) {
-	static const char* safety_str[] = {
+	static const char* const safety_str[] = {
 		"<<<DISABLED>>>",
 		"[ENABLED]",
 		"",
 	};
-	static const char* safety_active_str[] = {
+	static const char* const safety_active_str[] = {
 		"Inactive",
 		"Active"
 	};

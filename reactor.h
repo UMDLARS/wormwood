@@ -22,7 +22,7 @@ typedef enum {
  * [usermode_oper]		= "oper"
  * [usermode_super]		= "super"
  */
-extern const char* g_usermode_str[usermode_count];
+extern const char* const g_usermode_str[usermode_count];
 
 usermode_t reactor_get_usermode(void);
 void reactor_set_usermode(usermode_t mode);

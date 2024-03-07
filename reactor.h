@@ -40,8 +40,8 @@ typedef struct {
  */
 extern const char* const g_usermode_str[usermode_count];
 
-void reactor_impl_init(reactor_state_t* state);
+void reactor_init(reactor_state_t* state);
 
-void reactor_impl_update(reactor_state_t* state);
+void reactor_update(reactor_state_t* state);
 
-void reactor_impl_check_warns(reactor_state_t* state);
+void reactor_check_warns(reactor_state_t* state);

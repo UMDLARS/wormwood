@@ -6,7 +6,7 @@
 #include <string.h>
 #include "common.h"
 #include "console_win.h"
-#include "reactor_thread.h"
+#include "reactor_mgr.h"
 
 static bool g_initialized = false;
 
@@ -190,7 +190,7 @@ void status_update(void) {
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	/* Get current reactor state. */
-	reactor_state_t state = reactor_get_state();
+	reactor_state_t state = reactor_mgr_get_state();
 
 	/* Print status message. */
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL			 (%s)", timestring);

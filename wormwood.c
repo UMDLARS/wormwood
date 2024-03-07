@@ -6,7 +6,7 @@
 #include <time.h>
 #include "common.h"
 #include "console_win.h"
-#include "reactor_thread.h"
+#include "reactor_mgr.h"
 #include "status_win.h"
 
 bool get_string(char *dest) {
@@ -47,7 +47,7 @@ void auth_user(void) {
 	}
 
 	/* Initially set user mode to none. */
-	reactor_set_usermode(usermode_none);
+	reactor_mgr_set_usermode(usermode_none);
 
 	/* Check if provided user is valid & set usermode accordingly. */
 	if (strcmp(user_user, g_usermode_str[usermode_oper]) == 0) {
@@ -69,7 +69,7 @@ void auth_user(void) {
 		return;
 	}
 
-	reactor_set_usermode(userid);
+	reactor_mgr_set_usermode(userid);
 
 	return;
 }
@@ -77,7 +77,7 @@ void auth_user(void) {
 void print_menu(void) {
 	console_printf("Actions (choose one):\n");
 
-	usermode_t userid = reactor_get_usermode();
+	usermode_t userid = reactor_mgr_get_usermode();
 
 	/* Print auth if we're not in supervisor mode. */
 	if (userid != usermode_super) {
@@ -91,7 +91,7 @@ void print_menu(void) {
 
 		/* Allow enable/disable safety if we're in supervisor mode. */
 		if(userid == usermode_super) {
-			if (reactor_get_safety() == true) {
+			if (reactor_mgr_get_safety() == true) {
 				console_printf("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
 			}
 			else {
@@ -107,7 +107,7 @@ void print_menu(void) {
 	console_printf("(Q) - Quit\n");
 
 	/* Display wait option if we're in norealtime mode. */
-	if(reactor_get_mode() == reactor_mode_norealtime) {
+	if(reactor_mgr_get_mode() == reactor_mgr_mode_norealtime) {
 		console_printf("(?) - Any other choice - wait\n");
 	}
 }
@@ -133,13 +133,13 @@ void set_rod_depth(void) {
 		return;
 	}
 
-	reactor_set_rod_depth((unsigned char)new);
+	reactor_mgr_set_rod_depth((unsigned char)new);
 }
 
 void set_flow_rate(void) {
 	float new = 0;
 	char answer[256];
-	usermode_t userid = reactor_get_usermode();
+	usermode_t userid = reactor_mgr_get_usermode();
 
 	/* Ask user for flow rate. */
 	console_printf("What should the new flow rate be (0.0-100.0)?: ");
@@ -163,7 +163,7 @@ void set_flow_rate(void) {
 		console_wait_until_press();
 	}
 	else {
-		reactor_set_coolant_flow(new);
+		reactor_mgr_set_coolant_flow(new);
 	}
 }
 
@@ -196,13 +196,13 @@ void process_choice(char choice) {
 			set_flow_rate();
 			break;
 		case 'd':
-			reactor_set_safety(false);
+			reactor_mgr_set_safety(false);
 			break;
 		case 'e':
-			reactor_set_safety(true);
+			reactor_mgr_set_safety(true);
 			break;
 		case 'l':
-			reactor_set_usermode(usermode_none);
+			reactor_mgr_set_usermode(usermode_none);
 			break;
 		case 'q':
 			confirm_quit();
@@ -214,7 +214,7 @@ void process_choice(char choice) {
 	return;
 }
 
-void reactor_status(void) {
+void reactor_mgr_status(void) {
 	FUNCNAME
 
 	/* Clear console. */
@@ -224,7 +224,7 @@ void reactor_status(void) {
 	print_menu();
 
 	/* Ask user for choice. */
-	usermode_t userid = reactor_get_usermode();
+	usermode_t userid = reactor_mgr_get_usermode();
 	static const char* const arg_str[] = {
 		[usermode_none]		= "AQ",
 		[usermode_oper]		= "ARFLQ",
@@ -240,20 +240,20 @@ void reactor_status(void) {
 	}
 
 	/* Perform reactor update. */
-	reactor_update();
+	reactor_mgr_update();
 
 	return;
 }
 
 int main(int argc, char *argv[]) {
 	/* Get reactor mode. */
-	reactor_mode_t mode = reactor_mode_realtime; // default to realtime
+	reactor_mgr_mode_t mode = reactor_mgr_mode_realtime; // default to realtime
 	if(argc >= 2) {
 		if(!strcmp(argv[1], "realtime")) {
-			mode = reactor_mode_realtime;
+			mode = reactor_mgr_mode_realtime;
 		}
 		else if(!strcmp(argv[1], "norealtime")) {
-			mode = reactor_mode_norealtime;
+			mode = reactor_mgr_mode_norealtime;
 		}
 		else {
 			printf("Invalid mode %s.\n", argv[1]);
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
 	console_init();
 
 	/* Initialize reactor is previously obtained mode. */
-	reactor_init(mode);
+	reactor_mgr_init(mode);
 
 	/* Perform initial status update. */
 	status_update();
@@ -284,14 +284,14 @@ int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
 	while (1) {
-		reactor_status();
+		reactor_mgr_status();
 		if (exit_reason != exit_reason_none) {
 			break;
 		}
 	}
 
 	/* Finalize reactor. */
-	reactor_end();
+	reactor_mgr_end();
 
 	/* Finalize windows. */
 	status_end();

@@ -72,9 +72,9 @@ static void _update_safety(reactor_state_t* state) {
 	}
 }
 
-void reactor_impl_init(reactor_state_t* state) { *state = g_default_state; }
+void reactor_init(reactor_state_t* state) { *state = g_default_state; }
 
-void reactor_impl_update(reactor_state_t* state) {
+void reactor_update(reactor_state_t* state) {
 
 	/* DO NOT UPDATE THIS CODE */
 
@@ -139,7 +139,7 @@ void reactor_impl_update(reactor_state_t* state) {
 	}
 }
 
-void reactor_impl_check_warns(reactor_state_t* state) {
+void reactor_check_warns(reactor_state_t* state) {
 	/* Check if we've overheated. */
 	if(state->warns.temp_error) {
 		console_clear();

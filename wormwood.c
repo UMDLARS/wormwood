@@ -7,7 +7,6 @@
 #include "common.h"
 #include "console_win.h"
 #include "reactor_mgr.h"
-#include "status_win.h"
 
 bool get_string(char *dest) {
 	char input_buffer[8192];
@@ -271,14 +270,10 @@ int main(int argc, char *argv[]) {
 	init_pair(2, COLOR_RED, COLOR_BLACK);
 
 	/* Initialize windows. */
-	status_init();
 	console_init();
 
-	/* Initialize reactor is previously obtained mode. */
+	/* Initialize reactor with previously obtained mode. */
 	reactor_mgr_init(mode);
-
-	/* Perform initial status update. */
-	status_update();
 
 	/* Seed RNG with time. */
 	srand(time(NULL));
@@ -294,7 +289,6 @@ int main(int argc, char *argv[]) {
 	reactor_mgr_end();
 
 	/* Finalize windows. */
-	status_end();
 	console_end();
 
 	/* Close ncurses window. */

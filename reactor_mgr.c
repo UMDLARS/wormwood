@@ -77,7 +77,7 @@ static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 		_release_lock();
 
 		/* Update status. */
-		status_update();
+		status_update(&g_state);
 	}
 
 	return NULL;
@@ -160,10 +160,10 @@ void reactor_mgr_update(void) {
 	/* Process any warnings. */
 	_reactor_mgr_process_warns();
 
-	_release_lock();
-
 	/* Update status window. */
-	status_update();
+	status_update(&g_state);
+
+	_release_lock();
 }
 
 void reactor_mgr_init(reactor_mgr_mode_t mode) {
@@ -189,6 +189,12 @@ void reactor_mgr_init(reactor_mgr_mode_t mode) {
 			break;
 	}
 
+	/* Init status window. */
+	status_init();
+
+	/* Update status window. */
+	status_update(&g_state);
+
 	g_initialized = true;
 }
 
@@ -208,6 +214,9 @@ void reactor_mgr_end(void) {
 		default:
 			break;
 	}
+
+	/* Finalize status window. */
+	status_end();
 
 	g_initialized = false;
 }

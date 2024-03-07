@@ -57,6 +57,21 @@ static void _print_sparks(void) {
 	console_printf("\n");
 }
 
+static void _update_safety(reactor_state_t* state) {
+	/* If rod depth is below the upper limit, increment it. */
+	if (state->rod_depth < REACTOR_UNSAFE_DEPTH) {
+		state->rod_depth++;
+	}
+
+	/* If flow rate is below the upper limit, increase it. */
+	if (state->coolant_flow <= MAX_FLOW_RATE) {
+		state->coolant_flow = state->coolant_flow + 1;
+		if (state->coolant_flow > MAX_FLOW_RATE) {
+			state->coolant_flow = MAX_FLOW_RATE;
+		}
+	}
+}
+
 void reactor_impl_init(reactor_state_t* state) { *state = g_default_state; }
 
 void reactor_impl_update(reactor_state_t* state) {
@@ -108,18 +123,9 @@ void reactor_impl_update(reactor_state_t* state) {
 
 	/* SAFETY PROTOCOLS */
 	if (state->safety_enabled == true && state->temp > REACTOR_SAFE_TEMP) {
+		/* Activate and perform safety. */
 		state->safety_active = true;
-		if (state->rod_depth < REACTOR_UNSAFE_DEPTH - 1) {
-			/* Automatically increment state->rod_depth to cool reactor. */
-			state->rod_depth++;
-		}
-
-		if (state->coolant_flow <= MAX_FLOW_RATE) {
-			state->coolant_flow = state->coolant_flow + 1;
-			if (state->coolant_flow > MAX_FLOW_RATE) {
-				state->coolant_flow = MAX_FLOW_RATE;
-			}
-		}
+		_update_safety(state);
 	}
 
 	if (state->safety_active == true && state->temp <= REACTOR_SAFE_TEMP) {

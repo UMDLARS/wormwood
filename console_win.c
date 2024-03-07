@@ -182,6 +182,7 @@ bool console_read_strn(char* out, int max_len) {
 		switch(ch) {
 			case ERR: // We were interrupted, quit. 
 				res = false;
+				__attribute__((fallthrough));
 			case '\n':
 			case '\r': // I think this is a window-ism, but eh
 				done = true;
@@ -228,7 +229,7 @@ bool console_read_strn(char* out, int max_len) {
 	out[cur_size] = 0;
 	waddch(g_window, '\n');
 
-	return true;
+	return res;
 }
 
 void console_wait_until_press(void) {

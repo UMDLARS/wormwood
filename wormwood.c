@@ -1,251 +1,189 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <time.h>
 #include <ctype.h>
 #include <ncurses.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "common.h"
+#include "console_win.h"
+#include "reactor.h"
+#include "status_win.h"
 
-#define DEBUG 0
-#define FUNCNAME if (DEBUG) printw("In %s @ line %d...\n", __func__, __LINE__);
-
-#define MAX_SAFE_DEPTH 16
-#define MAX_FLOW_RATE 100.0
-
-typedef enum {
-	exit_reason_none = 0,
-	exit_reason_fail,
-	exit_reason_quit,
-} exit_reason_t;
-
-exit_reason_t exit_reason = exit_reason_none;
-char rod_depth = 16;
-float coolant_flow = 10;
-float coolant_temp = 70.0;
-float reactor_temp = 70.0;
-int usermode = 0;
-bool safety_enabled = true;
-bool safety_active = false;
-
-const char *users[] = {"NA", "oper", "super"};
-
-void wait_for_any_key() {
-	printw("Press any key to continue.");
-	refresh();
-	getch();
-}
-
-char *draw_rod_depth(char rod_depth, char *depth_hist) {
-	int idx = 0;
-	int i;
-	memset(depth_hist, '\0', 256);
-
-	/* If depth is negative, draw to left of bracket. */
-	if (depth_hist < 0) {
-		i = rod_depth * -1;
-
-		for (i; i > 0; i--) {
-			depth_hist[idx] = '=';
-			idx++;
-		}
-	}
-
-	/* Draw brackets and whitespace starting at 0. */
-	depth_hist[idx] = '[';
-	depth_hist[idx + 17] = ']';
-	idx++;
-	for (i = 0; i < 16; i++) {
-		depth_hist[idx + i] = ' ';
-	}
-
-	/* Depth is positive, draw to right of bracket. */
-	for (i = 0; i < rod_depth; i++) {
-		depth_hist[idx] = '=';
-		idx++;
-	}
-
-	/* Draw final bracket at max depth. */
-
-	return depth_hist;
-}
-
-void clear_screen_print_status() {
-	char depth_hist[256];
-
-	/* Generate timestamp string. */
-	time_t t = time(NULL);
-	struct tm tm = *localtime(&t);
-	char timestring[64];
-	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-	char *safetystring = "[ENABLED]";
-	if (safety_enabled == 0) {
-		safetystring = "<<<DISABLED>>>";
-	}
-
-	/* Clear screen first. */
-	clear();
-
-	/* Print status message. */
-	printw("+------------------------------------------------------------------------+\n");
-	printw("| JERICHO NUCLEAR REACTOR STATUS PANEL             (%s) |\n", timestring);
-	printw("+------------------------------------------------------------------------+\n");
-	printw("| reactor temp: %8.2f              coolant_temp: %8.2f             |\n", reactor_temp, coolant_temp); 
-	printw("| rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f     |\n", rod_depth, draw_rod_depth(rod_depth, depth_hist), coolant_flow); 
-	printw("| User: %-10s                                                       |\n", users[usermode]);
-	printw("+------------------------------------------------------------------------+\n");
-	printw("| SAFETY PROTOCOLS: %14s                                       |\n", safetystring);
-	printw("+------------------------------------------------------------------------+\n");
-}
-
-void get_string(char *dest) {
+bool get_string(char *dest) {
 	char input_buffer[8192];
-	getstr(input_buffer); // Creates a new vuln, do we want this?
-	strcpy(dest, input_buffer);
-}
-
-void print_sparks() {
-	int i = 500;
-	int j = 0;
-	while (i > 0) {
-		for (j = (rand() % 10); j > 0; j--) {
-			printw(" ");
-			i--;
-		}
-		printw("*");
-		i--;
+	if(!console_read_strn(input_buffer, 8192)) {
+		return false;
 	}
-
-	printw("\n");
+	strcpy(dest, input_buffer);
+	return true;
 }
 
-void auth_user() {
+void auth_user(void) {
 	FUNCNAME
 
 	char user_user[32];
 	char user_pass[32];
-	int userid = 0;
-	char *passes[] = {"NA", "HomerSimpson", "Artemisia1986"};
+	usermode_t userid = usermode_none;
+	const char* const passes[] = {
+		[usermode_none]		= "NA",
+		[usermode_oper]		= "HomerSimpson",
+		[usermode_super]	= "Artemisia1986"
+	};
 
 	/* Get username and put into user_user. */
-	printw("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
-    printw("Which role (%s or %s)?: ", users[1], users[2]);
-	refresh();
-	get_string(user_user);
-
-	printw("Password for user '");
-	printw(user_user);
-	printw("': ");
-	refresh();
-
-	get_string(user_pass);
-
-	/* Check if provided user is valid & set usermode accordingly. */
-	if (strcmp(user_user, users[1]) == 0) {
-		userid = 1;
-	}
-	else if (strcmp(user_user, users[2]) == 0) {
-		userid = 2;
-	}
-	else {
-		printw("AUTHENTICATION FAILED (no such user)\n");
-		usermode = 0;
+	console_printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
+	console_printf("Which role (%s or %s)?: ", g_usermode_str[usermode_oper], g_usermode_str[usermode_super]);
+	if(!get_string(user_user)) {
+		/* Return on failure. The reactor has blown up. */
 		return;
 	}
 
-	/* Check if provided password is correct. */
-	if (strcmp(user_pass, passes[userid]) == 0) {
-		printw("User '%s' AUTHENTICATED!\n", users[userid]);
-		usermode = userid;
-	} 
-	else {
-		printw("AUTHENTICATION FAILED (incorrect password)\n");
+	console_printf("Password for user '");
+	console_printf(user_user);
+	console_printf("': ");
+	if(!get_string(user_pass)) {
+		/* Return on failure. The reactor has blown up. */
+		return;
 	}
 
-	usermode = 2;
+	/* Initially set user mode to none. */
+	reactor_set_usermode(usermode_none);
+
+	/* Check if provided user is valid & set usermode accordingly. */
+	if (strcmp(user_user, g_usermode_str[usermode_oper]) == 0) {
+		userid = usermode_oper;
+	}
+	else if (strcmp(user_user, g_usermode_str[usermode_super]) == 0) {
+		userid = usermode_super;
+	}
+	else {
+		console_printf("AUTHENTICATION FAILED (no such user)\n");
+		console_wait_until_press();
+		return;
+	}
+
+	/* Check if provided password matches the one for the selected user. */
+	if(strcmp(user_pass, passes[userid]) != 0) {
+		console_printf("AUTHENTICATION FAILED (incorrect password)\n");
+		console_wait_until_press();
+		return;
+	}
+
+	reactor_set_usermode(userid);
+
 	return;
 }
 
-void print_menu() {
-	printw("Actions (choose one):\n");
+void print_menu(void) {
+	console_printf("Actions (choose one):\n");
+
+	usermode_t userid = reactor_get_usermode();
 
 	/* Print auth if we're not in supervisor mode. */
-	if (usermode != 2) {
-		printw("(A) - Authenticate\n");
+	if (userid != usermode_super) {
+		console_printf("(A) - Authenticate\n");
 	}
 
-	if (usermode != 0) {
+	if (userid != usermode_none) {
 		/* Print all normal oper options. */
-		printw("(R) - Set rod depth\n");
-		printw("(F) - Set coolant flow rate\n");
+		console_printf("(R) - Set rod depth\n");
+		console_printf("(F) - Set coolant flow rate\n");
 
 		/* Allow enable/disable safety if we're in supervisor mode. */
-		if(usermode == 2) {
-			if (safety_enabled == true) {
-				printw("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
-			} else {
-				printw("(E) - Enable automatic safety control (* SUPER ONLY *)\n");
+		if(userid == usermode_super) {
+			if (reactor_get_safety() == true) {
+				console_printf("(D) - Disable automatic safety control (* SUPER ONLY *)\n");
+			}
+			else {
+				console_printf("(E) - Enable automatic safety control (* SUPER ONLY *)\n");
 			}
 		}
 
 		/* If authenticated, provide option to log out. */
-		printw("(L) - Log out\n");
-
-		printw("(?) - Any other choice - wait\n");
+		console_printf("(L) - Log out\n");
 	}
 
 	/* Always print Quit. */
-	printw("(Q) - Quit\n");
+	console_printf("(Q) - Quit\n");
+
+	/* Display wait option if we're in norealtime mode. */
+	if(reactor_get_mode() == reactor_mode_norealtime) {
+		console_printf("(?) - Any other choice - wait\n");
+	}
 }
 
-void set_rod_depth() {
-	int new = 0;
+void set_rod_depth(void) {
+	char new = 0;
 	char answer[256];
-	printw("What should the new rod depth be (0-16) [current: %d]?: ", rod_depth);
-	refresh();
-	get_string(answer);
+
+	/* Ask user for rod depth. */
+	console_printf("What should the new rod depth be (0-16)?: ");
+	if(!get_string(answer)) {
+		/* Return on failure. The reactor has blown up. */
+		return;
+	}
+
+	/* Convert rod depth to an integer. */
 	new = atoi(answer);
 
-	printw("new: %d\n", new);
-	if (new <= MAX_SAFE_DEPTH) {
-		rod_depth = new;
+	/* Make sure rod depth isn't too high. */
+	if(new > REACTOR_UNSAFE_DEPTH) {
+		console_printf("New depth value %d is greater than or equal to %d -- ignoring!", new, REACTOR_UNSAFE_DEPTH);
+		console_wait_until_press();
+		return;
 	}
-	else {
-		printw("New depth value %d is greater than %d -- ignoring!", new, MAX_SAFE_DEPTH);
-	}
+
+	reactor_set_rod_depth((unsigned char)new);
 }
 
-void set_flow_rate() {
+void set_flow_rate(void) {
 	float new = 0;
 	char answer[256];
-	printw("What should the new flow rate be (0.0-100.0) [current: %03.2f]?: ", coolant_flow);
-	get_string(answer);
+	usermode_t userid = reactor_get_usermode();
+
+	/* Ask user for flow rate. */
+	console_printf("What should the new flow rate be (0.0-100.0)?: ");
+	if(!get_string(answer)) {
+		/* Return on failure. The reactor has blown up. */
+		return;
+	}
+
+	/* Convert flow rate to a float. */
 	new = atof(answer);
 
+	/* Make sure flow rate isn't too high. */
 	if (new > MAX_FLOW_RATE) {
-		printw("New flow rate (%03.2f) is greater than max %03.2f -- ignoring!\n", new, MAX_FLOW_RATE);
+		console_printf("New flow rate (%03.2f) is greater than max %03.2f -- ignoring!\n", new, MAX_FLOW_RATE);
+		console_wait_until_press();
 	}
 
-	if (new < 10 && usermode < 2) {
-		printw("User 'oper' cannot set flow rate below 10! -- ignoring!\n");
+	/* Make sure flow rate doesn't go below 10 for oper user. */
+	if (new < 10 && userid < usermode_super) {
+		console_printf("User 'oper' cannot set flow rate below 10! -- ignoring!\n");
+		console_wait_until_press();
 	}
 	else {
-		printw("New coolant flow rate: %03.2f (was: %03.2f)\n", new, coolant_flow);
-		coolant_flow = new;
+		reactor_set_coolant_flow(new);
 	}
 }
 
-void get_and_do_choice() {
-	char choice_string[256];
-	printw("Enter your selection (ARFDEL) and then press ENTER.\n");
-	refresh();
+void confirm_quit(void) {
+	/* Ask user to confirm that they want to quit. */
+	console_printf("Are you sure you want to quit? (Y/N)");
+	char choice = tolower(console_read_chr());
+	if(choice == ERR) { // this check isn't needed but helps with clarity.
+		return;
+	}
 
-	char choice = getch();
+	/* Exit if they said yes. */
+	if(choice == 'y') {
+		exit_reason = exit_reason_quit;
+	}
+}
 
-	/* Clear screen after the user enters an option. */
-	clear_screen_print_status();
-
-	//printw("Your choice was: '%c'\n", choice);
+void process_choice(char choice) {
+	/* Clear console after the user enters an option. */
+	console_clear();
 
 	switch(choice) {
 		case 'a':
@@ -258,169 +196,89 @@ void get_and_do_choice() {
 			set_flow_rate();
 			break;
 		case 'd':
-			safety_enabled = false;
-			printw("***** SAFETY PROTOCOLS DISABLED!!! *****\n");
+			reactor_set_safety(false);
 			break;
 		case 'e':
-			safety_enabled = true;
-			printw("***** SAFETY PROTOCOLS ENABLED!!! *****\n");
+			reactor_set_safety(true);
 			break;
 		case 'l':
-			printw("Deauthenticating.\n");
-			usermode = 0;
+			reactor_set_usermode(usermode_none);
 			break;
 		case 'q':
-			printw("Quitting...\n");
-			exit_reason = exit_reason_quit;
+			confirm_quit();
 			break;
 		default:
-			printw("Doing nothing...\n");
 			break;
 	}
 
 	return;
 }
 
-float float_up_to(int max) {
-	// https://stackoverflow.com/questions/13408990/how-to-generate-random-float-number-in-c
-	float fuzz = (float)rand()/(float)(RAND_MAX/max);
-	return fuzz;
-}
-
-float get_fuzz() {
-	return float_up_to(1);
-}
-
-int rand_sign() {
-	int sign;
-	int randval = rand();
-	if (randval % 2 == 0) {
-		sign = 1;
-	}
-	else {
-		sign = -1;
-	}
-
-	return sign;
-}
-
-void update_reactor() {
+void reactor_status(void) {
 	FUNCNAME
 
-	/* DO NOT UPDATE THIS CODE */
+	/* Clear console. */
+	console_clear();
 
-	/* This may shock you, but this is not a real nuclear reactor.
-	 * the physics of this "simulation" are not even remotely accurate...
-	 * in fact, I'm just making them up.
-	 * But, for the purposes of this activity, pretend that there is
-	 * real danger or stakes. It's more engaging and interesting that way!
-	 */
-
-	/* WARNINGS */
-	if (reactor_temp > 3000) {
-		printw("\n***** WARNING: REACTOR COOLANT WILL VAPORIZE AT 5000 DEGREES ******\n");
-		if(reactor_temp > 4000) {
-			printw("***** WARNING: IMMINENT BREACH! IMMINENT BREACH! ******\n");
-		}
-		printw("\n");
-	}
-
-	/* Fail/throw error if reactor temp goes over 5K. */
-	if (reactor_temp >= 5000) {
-		clear();
-		print_sparks();
-		printw("****** COOLANT VAPORIZATION *******\n");
-		printw("****** CONTAINMENT VESSEL VENTING *******\n");
-		printw("****** MAJOR RADIOACTIVITY LEAK!!! *******\n\n");
-		print_sparks();
-		exit_reason = exit_reason_fail;
-		return;
-	}
-
-	/* COOLANT FLOW HEAT REDUCTION. */
-	/* Coolant flow reduces reactor temp. */
-	if (reactor_temp > 70) {
-		reactor_temp = reactor_temp - ((coolant_flow * float_up_to(7)));
-	}
-
-	/* Coolant temp follows the reactor temp, but at a delay. */
-	coolant_temp = coolant_temp + ((reactor_temp - coolant_temp) * .15);
-
-	/* Reactor cannot get below room temp. */
-	if (reactor_temp < 70) {
-		reactor_temp = 70;
-	}
-
-	/* Fuzz the reactor temp a bit for realism. */
-	reactor_temp = reactor_temp + get_fuzz() * rand_sign();
-
-	/* RETRACTING THE RODS INCREASES THE TEMP */
-	/* for each unit the rod is not fully extracted, add a random float up to 50. */
-	float bump = 0;
-	int i;
-	int rod_factor = MAX_SAFE_DEPTH - rod_depth;
-
-	for (i = rod_factor; i > 0; i--) {
-		bump = bump + float_up_to(20);
-	}
-	reactor_temp = reactor_temp + bump;
-
-	/* SAFETY PROTOCOLS */
-	if (safety_enabled == true && reactor_temp > 2000) {
-		safety_active = 1;
-		printw("\n ****** SAFETY PROTOCOLS ENGAGED: Extending control rods! *******\n\n");
-		if (rod_depth <= MAX_SAFE_DEPTH) {
-			/* Automatically increment rod_depth to cool reactor. */
-			rod_depth++;
-		}
-
-		printw("\n ****** SAFETY PROTOCOLS ENGAGED: Increasing coolant flow! *******\n\n");
-		if (coolant_flow <= MAX_FLOW_RATE) {
-			coolant_flow = coolant_flow + 1;
-			if (coolant_flow > MAX_FLOW_RATE) {
-				coolant_flow = MAX_FLOW_RATE;
-			}
-		}
-	}
-
-	if (safety_active == 1 && reactor_temp < 2000) {
-		safety_active = 0;
-		printw("\n\n******* NORMAL OPERATING TEMPERATURE ACHIEVED ********\n\n");
-	}
-}
-
-void reactor_status() {
-	FUNCNAME
-
-	/* Clear screen. */
-	clear_screen_print_status();
-
+	/* Print menu. */
 	print_menu();
-	get_and_do_choice();
-	update_reactor();
 
-	/* Check if rod depth is safe. */
-	if (rod_depth < 0 || rod_depth > MAX_SAFE_DEPTH) {
-		clear();
-		print_sparks();
-		printw("WARNING! WARNING! WARNING!\n");
-		printw("CONTAINMENT VESSEL RUPTURE!\n");
-		printw("CONTROL RODS EXTENDED THROUGH CONTAINMENT VESSEL!!!\n");
-	    printw("RADIATION LEAK - EVACUATE THE AREA!\n\n");
-		print_sparks();
-		refresh();
-		exit_reason = exit_reason_fail;
+	/* Ask user for choice. */
+	usermode_t userid = reactor_get_usermode();
+	static const char* const arg_str[] = {
+		[usermode_none]		= "AQ",
+		[usermode_oper]		= "ARFLQ",
+		[usermode_super]	= "RFDELQ"
+	};
+	console_printf("Enter your selection (%s) and then press ENTER.\n", arg_str[userid]);
+	
+	/* Read choice. */
+	char choice = tolower(console_read_chr());
+	if(choice != ERR) {
+		/* Process choice if no error occurs. */
+		process_choice(choice);
 	}
 
-	wait_for_any_key();
+	/* Perform reactor update. */
+	reactor_update();
 
 	return;
 }
 
-
 int main(int argc, char *argv[]) {
+	/* Get reactor mode. */
+	reactor_mode_t mode = reactor_mode_realtime; // default to realtime
+	if(argc >= 2) {
+		if(!strcmp(argv[1], "realtime")) {
+			mode = reactor_mode_realtime;
+		}
+		else if(!strcmp(argv[1], "norealtime")) {
+			mode = reactor_mode_norealtime;
+		}
+		else {
+			printf("Invalid mode %s.\n", argv[1]);
+			return -1;
+		}
+	}
+
 	/* Initialize ncurses. */
 	initscr();
+	start_color();
+	halfdelay(1);
+
+	/* Setup colors. */
+	init_pair(1, COLOR_WHITE, COLOR_RED);
+	init_pair(2, COLOR_RED, COLOR_BLACK);
+
+	/* Initialize windows. */
+	status_init();
+	console_init();
+
+	/* Initialize reactor is previously obtained mode. */
+	reactor_init(mode);
+
+	/* Perform initial status update. */
+	status_update();
 
 	/* Seed RNG with time. */
 	srand(time(NULL));
@@ -431,6 +289,13 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 	}
+
+	/* Finalize reactor. */
+	reactor_end();
+
+	/* Finalize windows. */
+	status_end();
+	console_end();
 
 	/* Close ncurses window. */
 	endwin();

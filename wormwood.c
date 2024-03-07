@@ -6,7 +6,7 @@
 #include <time.h>
 #include "common.h"
 #include "console_win.h"
-#include "reactor.h"
+#include "reactor_thread.h"
 #include "status_win.h"
 
 bool get_string(char *dest) {

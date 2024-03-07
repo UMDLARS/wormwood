@@ -6,7 +6,7 @@
 #include <string.h>
 #include "common.h"
 #include "console_win.h"
-#include "reactor.h"
+#include "reactor_thread.h"
 
 static bool g_initialized = false;
 

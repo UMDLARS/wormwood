@@ -17,35 +17,6 @@ typedef enum {
 	usermode_count
 } usermode_t;
 
-/*
- * [usermode_none]		= "NA"
- * [usermode_oper]		= "oper"
- * [usermode_super]		= "super"
- */
-extern const char* const g_usermode_str[usermode_count];
-
-usermode_t reactor_get_usermode(void);
-void reactor_set_usermode(usermode_t mode);
-
-bool reactor_get_safety(void);
-void reactor_set_safety(bool enabled);
-
-bool reactor_get_safety_active(void);
-
-unsigned char reactor_get_rod_depth(void);
-void reactor_set_rod_depth(unsigned char depth);
-
-float reactor_get_coolant_flow(void);
-void reactor_set_coolant_flow(float flow);
-
-float reactor_get_temp(void);
-float reactor_get_coolant_temp(void);
-
-
-/**************************************************************
- *          Don't worry about anything below here :)          *
- **************************************************************/
-
 typedef struct {
 	unsigned int temp_error : 1;
 	unsigned int rupture_error :1;
@@ -62,16 +33,15 @@ typedef struct {
 	bool safety_active;
 } reactor_state_t;
 
-reactor_state_t reactor_get_state(void);
+/*
+ * [usermode_none]		= "NA"
+ * [usermode_oper]		= "oper"
+ * [usermode_super]		= "super"
+ */
+extern const char* const g_usermode_str[usermode_count];
 
-void reactor_update(void);
+void reactor_impl_init(reactor_state_t* state);
 
-typedef enum {
-	reactor_mode_norealtime,
-	reactor_mode_realtime,
-	reactor_mode_count
-} reactor_mode_t;
+void reactor_impl_update(reactor_state_t* state);
 
-void reactor_init(reactor_mode_t mode);
-void reactor_end(void);
-reactor_mode_t reactor_get_mode(void);
+void reactor_impl_check_warns(reactor_state_t* state);

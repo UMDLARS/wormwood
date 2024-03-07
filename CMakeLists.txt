@@ -10,6 +10,7 @@ pkg_check_modules(NCURSES REQUIRED ncurses)
 set(WW_HEADERS
     "common.h"
     "console_win.h"
+    "reactor_thread.h"
     "reactor.h"
     "status_win.h"
 )
@@ -17,6 +18,7 @@ set(WW_HEADERS
 set(WW_SOURCES
     "common.c"
     "console_win.c"
+    "reactor_thread.c"
     "reactor.c"
     "status_win.c"
     "wormwood.c"

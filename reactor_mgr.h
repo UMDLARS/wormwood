@@ -25,8 +25,6 @@ float reactor_mgr_get_coolant_temp(void);
  *          Don't worry about anything below here :)          *
  **************************************************************/
 
-reactor_state_t reactor_mgr_get_state(void);
-
 void reactor_mgr_update(void);
 
 typedef enum {

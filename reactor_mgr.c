@@ -142,13 +142,6 @@ void reactor_mgr_set_coolant_flow(float flow) { _EXCL_ACCESS(g_state.coolant_flo
 float reactor_mgr_get_temp(void) { _EXCL_RETURN(float, g_state.temp); }
 float reactor_mgr_get_coolant_temp(void) { _EXCL_RETURN(float, g_state.coolant_temp); }
 
-reactor_state_t reactor_mgr_get_state(void) {
-	_aquire_lock();
-	reactor_state_t state = g_state;
-	_release_lock();
-	return state;
-}
-
 void reactor_mgr_update(void) {
 	_aquire_lock();
 

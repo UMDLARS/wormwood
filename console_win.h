@@ -52,6 +52,27 @@ void console_wait_until_press(void);
 /** Clear the console. */
 void console_clear(void);
 
+/**
+ * Interrupt console interrupt.
+ *
+ * If another thread is currently being blocked by console input, 
+ * this will cause it to return early. If another thread is not currently
+ * being blocked by console input, the next input function will return 
+ * immediately with an error. 
+ *
+ * This is called within reactor upon a critical error.
+ */
+void console_interrupt(void);
+
+/**
+ * Clear console interrupt.
+ *
+ * If `console_interrupt` has been called but no input function has been 
+ * called, this will cause the next input function called to *not* return
+ * immediately.
+ */
+void console_clear_interrupt(void);
+
 
 /**************************************************************
  *          Don't worry about anything below here :)          *
@@ -66,5 +87,3 @@ void console_end(void);
 /** Reset the visible cursor back to the console. */
 void console_refresh_cursor(void);
 
-void console_interrupt(void);
-void console_clear_interrupt(void);

@@ -77,6 +77,10 @@ static void _set_safety_str(int state, bool active) {
 		/* The extra two spaces at the end are a hack to fully overwrite inactive when switching to active */
 		wprintw(g_window, " (%s)  ", safety_active_str[active]);
 	}
+	else {
+		/* Write 12 space characters to overwrite active/inactive text. */
+		for(int i = 0; i < 12; i++) waddch(g_window, ' ');
+	}
 
 	/* Update safety text. */
 	wrefresh(g_window);

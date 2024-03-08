@@ -6,14 +6,13 @@
 #include <string.h>
 #include "common.h"
 #include "console_win.h"
+#include "reactor.h"
 
 static bool g_initialized = false;
 
 static WINDOW* g_window = NULL;
 
 static pthread_mutex_t g_status_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static char g_depth_hist[256];
 
 static bool g_last_safety_state = false; // default safety is true.
 static bool g_last_safety_active = false;
@@ -25,24 +24,32 @@ static pthread_cond_t g_flash_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t g_flash_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_flash_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static char *_draw_rod_depth(char rod_depth) {
-	memset(g_depth_hist, '\0', sizeof(g_depth_hist));
-
-	/* Draw brackets and whitespace starting at 0. */
-    int max_depth = REACTOR_UNSAFE_DEPTH - 1;
-	g_depth_hist[0] = '[';
-	g_depth_hist[17] = ']';
-	for (int i = 0; i < max_depth; i++) {
-		g_depth_hist[i + 1] = ' ';
+static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
+	/* Do nothing if rod_depth is invalid. */
+	if(rod_depth > REACTOR_MAX_DEPTH) {
+		out[0] = 0;
+		return out;
 	}
 
-    /* If depth is positive, draw from left, otherwise from right. */
-    int idx = (rod_depth < 0 ? max_depth + rod_depth : 0) + 1;
+	/* Draw first bracket. */
+	int idx = 0;
+	out[idx++] = '[';
+
+    /* Draw rod. */
     for(int i = 0; i < rod_depth; i++) {
-        g_depth_hist[idx++] = '=';
+        out[idx++] = '=';
     }
 
-	return g_depth_hist;
+	/* Draw whitespace. */
+	for(int i = 0; i < REACTOR_MAX_DEPTH - rod_depth; i++) {
+		out[idx++] = ' ';
+	}
+
+	/* Draw second bracket + null term. */
+	out[idx++] = ']';
+	out[idx++] = 0;
+
+	return out;
 }
 
 /*
@@ -188,9 +195,13 @@ void status_update(const reactor_state_t* state) {
 	char timestring[64];
 	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
+	/* Draw rod depth. */
+	char rod_depth_txt[REACTOR_MAX_DEPTH + 3]; // +3 for brackets + null term.
+	_draw_rod_depth(rod_depth_txt, state->rod_depth);
+
 	/* Print status message. */
 	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL			 (%s)", timestring);
-	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state->rod_depth, _draw_rod_depth(state->rod_depth), state->coolant_flow); 
+	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state->rod_depth, rod_depth_txt, state->coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", g_usermode_str[state->usermode]);
 
 	/* Print start of temperature line. */

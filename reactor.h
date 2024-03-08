@@ -1,9 +1,13 @@
 #pragma once
+#include <limits.h>
 #include <stdbool.h>
 
 #define MAX_FLOW_RATE 100.0
 
-#define REACTOR_UNSAFE_DEPTH 17
+#define REACTOR_MAX_DEPTH 16
+#define REACTOR_UNSAFE_DEPTH REACTOR_MAX_DEPTH + 1
+_Static_assert(REACTOR_MAX_DEPTH >= 1, "Max depth must be at least 1.");
+_Static_assert(REACTOR_MAX_DEPTH <= CHAR_MAX, "Max depth cannot be greater than CHAR_MAX.");
 
 #define REACTOR_SAFE_TEMP 2000
 #define REACTOR_WARNING_TEMP 3000

@@ -4,6 +4,7 @@
 #include <ncurses.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
 #include "common.h"
 #include "console_win.h"
 #include "reactor.h"
@@ -189,18 +190,18 @@ void status_update(const reactor_state_t* state) {
 	/* Aquire lock, we only want one thread updating this at a time. */
 	assert(pthread_mutex_lock(&g_status_mutex) == 0);
 
-	/* Generate timestamp string. */
+	/* Get current time. */
+	struct tm tm;
 	time_t t = time(NULL);
-	struct tm tm = *localtime(&t);
-	char timestring[64];
-	sprintf(timestring, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	localtime_r(&t, &tm);
 
 	/* Draw rod depth. */
 	char rod_depth_txt[REACTOR_MAX_DEPTH + 3]; // +3 for brackets + null term.
 	_draw_rod_depth(rod_depth_txt, state->rod_depth);
 
 	/* Print status message. */
-	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL			 (%s)", timestring);
+	mvwprintw(g_window, 1, 1, "JERICHO NUCLEAR REACTOR STATUS PANEL");
+	mvwprintw(g_window, 1, STATUS_WIN_W - 23, "(%d-%02d-%02d %02d:%02d:%02d)", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state->rod_depth, rod_depth_txt, state->coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", g_usermode_str[state->usermode]);
 

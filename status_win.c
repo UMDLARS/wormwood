@@ -36,7 +36,7 @@ static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	int idx = 0;
 	out[idx++] = '[';
 
-    /* Draw rod. */
+	/* Draw rod. */
 	for(int i = 0; i < rod_depth; i++) {
 		out[idx++] = '=';
 	}

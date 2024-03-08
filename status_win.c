@@ -37,9 +37,9 @@ static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	out[idx++] = '[';
 
     /* Draw rod. */
-    for(int i = 0; i < rod_depth; i++) {
-        out[idx++] = '=';
-    }
+	for(int i = 0; i < rod_depth; i++) {
+		out[idx++] = '=';
+	}
 
 	/* Draw whitespace. */
 	for(int i = 0; i < REACTOR_MAX_DEPTH - rod_depth; i++) {

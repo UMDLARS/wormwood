@@ -85,14 +85,6 @@ void reactor_update(reactor_state_t* state) {
 	 * real danger or stakes. It's more engaging and interesting that way!
 	 */
 
-	/* Fail/throw error if reactor temp goes over 5K. */
-	if (state->temp >= REACTOR_EXPLODE_TEMP) {
-		state->warns.temp_error = true;
-		exit_reason = exit_reason_fail;
-		console_interrupt();
-		return;
-	}
-
 	/* COOLANT FLOW HEAT REDUCTION. */
 	/* Coolant flow reduces reactor temp. */
 	if (state->temp > 70) {
@@ -132,6 +124,15 @@ void reactor_update(reactor_state_t* state) {
 		state->safety_active = false;
 	}
 
+	/* Fail/throw error if reactor temp goes over 5K. */
+	if (state->temp >= REACTOR_EXPLODE_TEMP) {
+		state->warns.temp_error = true;
+		exit_reason = exit_reason_fail;
+		console_interrupt();
+		return;
+	}
+
+	/* Fail/throw error if rod depth is too high. */
 	if(state->rod_depth >= REACTOR_UNSAFE_DEPTH) { // add <0 check if we go back to signed
 		state->warns.rupture_error = true;
 		exit_reason = exit_reason_fail;

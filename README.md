@@ -94,6 +94,12 @@ I think we can all agree that crashing the control system of a nuclear reactor c
 
 ## tasks
 
+### helpful information
+
+All (intentional) vulnerabilities are contained within `wormwood.c` and `reactor.c`, however it may be helpful to look at some of the other headers (i.e., `console_win.h`) for information on some of the functions being used.
+
+For faster testing you may want to use norealtime mode by running `./run.sh norealtime`. norealtime will let you update the reactor manually rather than having to wait a second for each update.
+
 ### exploitation
 
 Make the nuclear reactor quit with a failure using each of the four vulnerabilities described above. For reference:
@@ -104,10 +110,6 @@ Make the nuclear reactor quit with a failure using each of the four vulnerabilit
  4. Make the reactor fail due to an off-by-one error.
 
 ### remediation
-
-All (intentional) vulnerabilities are contained within `wormwood.c` and `reactor.c`, however it may be helpful to look at some of the other headers (i.e., `console_win.h`) for information on some of the functions being used.
-
-For faster testing you may want to use norealtime mode by running `./run.sh norealtime`. norealtime will let you update the reactor manually rather than having to wait a second for each update.
 
 Fix the source code so that it still functions normally, but:
  1. Buffer overflows are no longer possible (i.e., make sure that writes to a buffer cannot use more space than the buffer has)

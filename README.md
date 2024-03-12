@@ -36,19 +36,20 @@ Without looking at the source code, try to make the reactor fail using each of t
 When running, the program displays a "dashboard" for a nuclear reactor control system. It looks like this:
 
 ```
-+------------------------------------------------------------------------+
-| JERICHO NUCLEAR REACTOR STATUS PANEL             (2024-01-25 12:18:35) |
-+------------------------------------------------------------------------+
-| reactor temp:    70.00              coolant_temp:    70.00             |
-| rod_depth: 16 --[ [================] ]--  coolant flow rate: 10.00     |
-| User: NA                                                               |
-+------------------------------------------------------------------------+
-| SAFETY PROTOCOLS:      [ENABLED]                                       |
-+------------------------------------------------------------------------+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│JERICHO NUCLEAR REACTOR STATUS PANEL                    (2024-03-12 16:30:35) │
+├──────────────────────────────────────────────────────────────────────────────┤
+│reactor temp:    70.05           coolant_temp:    64.57                       │
+│rod_depth: 16 --[ [================] ]--  coolant flow rate: 10.00            │
+│User: NA                                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│SAFETY PROTOCOLS:      [ENABLED] (Inactive)                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
 Actions (choose one):
 (A) - Authenticate
-WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!
-Which role (oper or super)?: 
+(Q) - Quit
+Enter your selection (AQ) and then press ENTER.
 ```
 
 ## how do nuclear reactors work?

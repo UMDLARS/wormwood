@@ -23,7 +23,7 @@ ArchLinux: `pacman -Syu && pacman -S base-devel cmake ncurses`
 
 This tool is a C program that can run on any Linux system. It does not require any privileges.
 
- 1. Clone this repository onto a Linux machine. (For Fall'23 Computer Security, start a `posix` lab on Merge, log into `posix`, and do your work there.)
+ 1. Clone this repository onto a Linux machine. (For Spring'24 Computer Security, start a `posix` lab on Merge, log into `posix`, and do your work there.)
  1. Install dependencies above (Merge is using Debian).
  1. `cd` into the repository
  1. Execute `./run.sh`

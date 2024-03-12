@@ -24,7 +24,7 @@ ArchLinux: `pacman -Syu && pacman -S base-devel cmake ncurses`
 This tool is a C program that can run on any Linux system. It does not require any privileges.
 
  1. Clone this repository onto a Linux machine. (For Fall'23 Computer Security, start a `posix` lab on Merge, log into `posix`, and do your work there.)
- 1. Install dependencies above.
+ 1. Install dependencies above (Merge is using Debian).
  1. `cd` into the repository
  1. Execute `./run.sh`
  1. Log in as the `oper` user with the password `HomerSimpson`
@@ -68,6 +68,8 @@ Only the `super` user can disable the automated safety protocols, but normal `op
 
 This advanced and completely pretend reactor can continue operating until its temperature reaches 5,000 degrees, at which point it will fail catastrophically. (In reality, reactors [cannot withstand temperatures much above 1,000 degrees Fahrenheit](https://en.wikipedia.org/wiki/Corium_(nuclear_reactor)).)
 
+The reactor can also operate in two different modes. In the first mode, called realtime, the reactor's temperature and other bits automatically update in the background every second. In the second mode, called norealtime, the reactor only updates when you perform an action, and an additional "wait" action is added. The default mode is realtime and can be overridden by passing "realtime" or "norealtime" as the first argument to `run.sh`.
+
 ## the vulnerabilities
 
 There are many bugs in this program, but in particular there are four classic C-language issues in this program that can cause catastrophic failure of the "reactor".
@@ -103,6 +105,10 @@ Make the nuclear reactor quit with a failure using each of the four vulnerabilit
 
 ### remediation
 
+All (intentional) vulnerabilities are contained within `wormwood.c` and `reactor.c`, however it may be helpful to look at some of the other headers (i.e., `console_win.h`) for information on some of the functions being used.
+
+For faster testing you may want to use norealtime mode by running `./run.sh norealtime`. norealtime will let you update the reactor manually rather than having to wait a second for each update.
+
 Fix the source code so that it still functions normally, but:
  1. Buffer overflows are no longer possible (i.e., make sure that writes to a buffer cannot use more space than the buffer has)
  2. Add validation code and/or change the types of the variables so that integer overflow / sign issues do not lead to failures.
@@ -116,6 +122,3 @@ Write your answers into the associated Canvas quiz item (available in the Canvas
 ## questions / bug reports
 
 Talk to your TA or email [pahp@d.umn.edu](mailto:pahp@d.umn.edu).
-
-
-

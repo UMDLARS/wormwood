@@ -11,12 +11,20 @@ Wormwood is a nuclear reactor "simulator" exploring four major problems in C pro
 
 The "simulation" (which is not even remotely accurate) has many issues, but you can cause something bad to happen using each of the four vulnerabilities described above.
 
+## dependencies
+
+Debian/Ubuntu: `apt update && apt install build-essential cmake libcurses-dev pkg-config`
+
+Fedora/RHEL: `dnf update && dnf install gcc cmake ncurses-devel pkgconf`
+
+ArchLinux: `pacman -Syu && pacman -S base-devel cmake ncurses`
+
 ## quickstart
 
 This tool is a C program that can run on any Linux system. It does not require any privileges.
 
  1. Clone this repository onto a Linux machine. (For Fall'23 Computer Security, start a `posix` lab on Merge, log into `posix`, and do your work there.)
- 1. Install `gcc` if necessary (on Ubuntu/Debian: `apt update && apt install gcc`)
+ 1. Install dependencies above.
  1. `cd` into the repository
  1. Execute `./run.sh`
  1. Log in as the `oper` user with the password `HomerSimpson`

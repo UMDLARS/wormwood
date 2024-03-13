@@ -1,3 +1,5 @@
+# This is subject to change! Please check back after/during lab :)
+
 # wormwood
 It would be a really bad idea to write control software for a nuclear reactor in the C language. What if someone did?
 

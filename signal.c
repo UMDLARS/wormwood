@@ -4,7 +4,15 @@
 #include <stdlib.h>
 #include <ncurses.h>
 
+static bool g_fault_occurred = false;
+
 static void _error_handler(int sig) {
+    if(g_fault_occurred) {
+        exit(1);
+    }
+
+    g_fault_occurred = true;
+
 	/* Close ncurses window. */
 	endwin();
 

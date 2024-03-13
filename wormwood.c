@@ -6,6 +6,7 @@
 #include <time.h>
 #include "common.h"
 #include "console_win.h"
+#include "signal.h"
 #include "reactor_mgr.h"
 
 bool get_string(char *dest) {
@@ -259,6 +260,10 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 	}
+
+	/* Setup exception handlers. */
+	/* These are needed to cleanup ncurses when a fault occurs. */
+	signal_setup_handlers();
 
 	/* Initialize ncurses. */
 	initscr();

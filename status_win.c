@@ -28,7 +28,7 @@ static pthread_mutex_t g_flash_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	/* Do nothing if rod_depth is invalid. */
 	if(rod_depth > REACTOR_MAX_DEPTH) {
-		rod_depth = 0;
+		rod_depth = REACTOR_MAX_DEPTH;
 	}
 
 	/* Draw first bracket. */

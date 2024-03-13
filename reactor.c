@@ -59,8 +59,9 @@ static void _print_sparks(void) {
 
 static void _update_safety(reactor_state_t* state) {
 	/* If rod depth is below the upper limit, increment it. */
-	if (state->rod_depth < REACTOR_UNSAFE_DEPTH) {
-		state->rod_depth++;
+	unsigned char new_depth = state->rod_depth + 1;
+	if (reactor_is_rod_depth_safe(new_depth)) {
+		state->rod_depth = new_depth;
 	}
 
 	/* If flow rate is below the upper limit, increase it. */
@@ -71,6 +72,8 @@ static void _update_safety(reactor_state_t* state) {
 		}
 	}
 }
+
+bool reactor_is_rod_depth_safe(unsigned char depth) { return depth <= REACTOR_UNSAFE_DEPTH; }
 
 void reactor_init(reactor_state_t* state) { *state = g_default_state; }
 

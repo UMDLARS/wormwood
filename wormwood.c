@@ -6,6 +6,7 @@
 #include <time.h>
 #include "common.h"
 #include "console_win.h"
+#include "reactor.h"
 #include "signal.h"
 #include "reactor_mgr.h"
 
@@ -127,7 +128,7 @@ void set_rod_depth(void) {
 	new = atoi(answer);
 
 	/* Make sure rod depth isn't too high. */
-	if(new > REACTOR_UNSAFE_DEPTH) {
+	if(!reactor_is_rod_depth_safe(new)) {
 		console_printf("New depth value %d is greater than or equal to %d -- ignoring!", new, REACTOR_UNSAFE_DEPTH);
 		console_wait_until_press();
 		return;

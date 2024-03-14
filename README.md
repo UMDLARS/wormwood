@@ -15,7 +15,7 @@ The "simulation" (which is not even remotely accurate) has many issues, but you 
 
 ## dependencies
 
-Debian/Ubuntu: `apt update && apt install build-essential cmake libcurses-dev pkg-config`
+Debian/Ubuntu: `apt update && apt install build-essential cmake libncurses-dev pkg-config`
 
 Fedora/RHEL: `dnf update && dnf install gcc cmake ncurses-devel pkgconf`
 

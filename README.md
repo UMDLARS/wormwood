@@ -13,11 +13,11 @@ The "simulation" (which is not even remotely accurate) has many issues, but you 
 
 ## dependencies
 
-Debian/Ubuntu: `sudo apt update && sudo apt install build-essential cmake libncurses-dev pkg-config`
+Debian/Ubuntu: `sudo apt update && sudo apt install build-essential cmake libncurses-dev pkg-config git`
 
-Fedora/RHEL: `sudo dnf update && sudo dnf install gcc cmake ncurses-devel pkgconf`
+Fedora/RHEL: `sudo dnf update && sudo dnf install gcc cmake ncurses-devel pkgconf git`
 
-ArchLinux: `sudo pacman -Syu && sudo pacman -S base-devel cmake ncurses`
+ArchLinux: `sudo pacman -Syu && sudo pacman -S base-devel cmake ncurses git`
 
 ## quickstart
 

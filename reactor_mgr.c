@@ -43,8 +43,6 @@ static void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mgr_mut
 	return _val; \
 }
 
-static void _update_impl(void) { reactor_update(&g_state); }
-
 static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 	struct timespec timeout;
 	bool done = false;
@@ -65,7 +63,7 @@ static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 
 		/* Perform update if we're suppose to still be running, otherwise quit. */
 		if(g_realtime_active) {
-			_update_impl();
+			reactor_update(&g_state);
 			if(exit_reason != exit_reason_none) {
 				done = true;
 			}
@@ -106,8 +104,6 @@ static void _end_realtime_update(void) {
 	assert(pthread_join(g_realtime_thread, NULL) == 0);
 }
 
-static void _reactor_mgr_process_warns(void) { reactor_check_warns(&g_state); }
-
 usermode_t reactor_mgr_get_usermode(void) { _EXCL_RETURN(usermode_t, g_state.usermode); }
 void reactor_mgr_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_state.usermode = mode); }
 
@@ -147,11 +143,11 @@ void reactor_mgr_update(void) {
 
 	/* If we're in norealtime mode, perform an update. */
 	if(g_mode == reactor_mgr_mode_norealtime) {
-		_update_impl();
+		reactor_update(&g_state);
 	}
 
 	/* Process any warnings. */
-	_reactor_mgr_process_warns();
+	reactor_check_warns(&g_state);
 
 	/* Update status window. */
 	status_update(&g_state);

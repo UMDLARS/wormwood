@@ -44,7 +44,7 @@ typedef struct {
  */
 extern const char* const g_usermode_str[usermode_count];
 
-bool reactor_is_rod_depth_safe(unsigned char depth);
+bool reactor_is_rod_depth_safe(char depth);
 
 void reactor_init(reactor_state_t* state);
 

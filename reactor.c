@@ -73,7 +73,7 @@ static void _update_safety(reactor_state_t* state) {
 	}
 }
 
-bool reactor_is_rod_depth_safe(unsigned char depth) { return depth <= REACTOR_UNSAFE_DEPTH; }
+bool reactor_is_rod_depth_safe(char depth) { return depth <= REACTOR_UNSAFE_DEPTH; }
 
 void reactor_init(reactor_state_t* state) { *state = g_default_state; }
 

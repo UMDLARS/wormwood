@@ -14,11 +14,13 @@ set(WW_HEADERS
     "reactor_mgr.h"
     "reactor.h"
     "status_win.h"
+    "wormwood.h"
 )
 
 set(WW_SOURCES
     "common.c"
     "console_win.c"
+    "main.c"
     "signal.c"
     "reactor_mgr.c"
     "reactor.c"

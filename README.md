@@ -80,8 +80,6 @@ A [format string vulnerability](https://axcheron.github.io/exploit-101-format-st
 
 There are a couple classic ways to do this. One way is to use `%p` to print out the next stack value as a pointer (which will be 8 bytes on a 64-bit machine or 4 bytes on a 32-bit machine) and then -- if you're looking for a string value on the stack, use `%s`. So, a format string like `"%p %s"` will print the first value as a pointer and the next value as a string. If that isn't interesting, try adding more pointers to look at later values on the stack, like this: `"%p %p %s"` ... keep adding more `%p` specifiers until you find something interesting.
 
-You can also specify the nth parameter you want by providing the format string `%N$s` where `N` is an integer. Some values of `N` might crash your program, but other values of `N` might reveal information present on the stack of the running program. Where is it that you are able to provide a format string as input? You'll just have to figure that out by experimenting.
-
 ### off-by-one
 
 Somewhere in the code is a vulnerability that has an arithmetic error where something should stop at a certain value, but it stops *one value away*. Unfortunately for the people who live near the reactor, that one unit turns out to be really significant.

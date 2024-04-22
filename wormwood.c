@@ -3,11 +3,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "common.h"
 #include "console_win.h"
 #include "reactor.h"
-#include "signal.h"
 #include "reactor_mgr.h"
 
 bool get_string(char *dest) {

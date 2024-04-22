@@ -1,4 +1,5 @@
 #include <ncurses.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +7,50 @@
 #include "common.h"
 #include "console_win.h"
 #include "reactor_mgr.h"
-#include "signal.h"
 #include "wormwood.h"
+
+static bool g_fault_occurred = false;
+
+static void _error_handler(__attribute__((unused)) int sig) {
+    if(g_fault_occurred) {
+        exit(1);
+    }
+
+    g_fault_occurred = true;
+
+	/* Close ncurses window. */
+	endwin();
+
+    fputs("Congrats! You broke it!\n", stderr);
+}
+
+static void _exit_handler(__attribute__((unused)) int sig) {
+	/* Close ncurses window. */
+	endwin();
+
+    /* Exit. */
+    exit(0);
+}
+
+// https://www.gnu.org/software/libc/manual/html_node/Termination-Signals.html
+// https://man7.org/linux/man-pages/man2/sigaction.2.html
+static void _setup_signal_handlers(void) {
+    /* Setup handler struct. */
+    struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler = _error_handler;
+
+    /* Handle SIGSEGV and SIGIOT. */
+    sigaction(SIGSEGV, &act, NULL);
+    sigaction(SIGIOT, &act, NULL);
+
+    /* Handle SIGTERM, SIGINT, and SIGQUIT*/
+    act.sa_handler = _exit_handler;
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
+}
 
 int main(int argc, char *argv[]) {
 	/* Get reactor mode. */
@@ -25,9 +68,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	/* Setup exception handlers. */
-	/* These are needed to cleanup ncurses when a fault occurs. */
-	signal_setup_handlers();
+	/* Setup signal handlers. */
+	_setup_signal_handlers();
 
 	/* Initialize ncurses. */
 	initscr();

@@ -17,7 +17,7 @@ static pthread_mutex_t g_reactor_mgr_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Reactor config. */
 static reactor_mgr_mode_t g_mode = reactor_mgr_mode_norealtime;
 
-/* Reactor state.. */
+/* Reactor state. */
 static reactor_state_t g_state;
 
 /* Realtime mode variables. */
@@ -74,7 +74,7 @@ static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 		}
 
 		/* Update status. */
-		status_update(&g_state);
+		status_update(&g_state, g_tick);
 
 		/* Update tick. */
 		g_tick++;
@@ -154,7 +154,7 @@ void reactor_mgr_update(void) {
 	reactor_check_warns(&g_state);
 
 	/* Update status window. */
-	status_update(&g_state);
+	status_update(&g_state, g_tick);
 
 	_release_lock();
 }
@@ -186,7 +186,7 @@ void reactor_mgr_init(reactor_mgr_mode_t mode) {
 	status_init();
 
 	/* Update status window. */
-	status_update(&g_state);
+	status_update(&g_state, g_tick);
 
 	g_initialized = true;
 }

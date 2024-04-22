@@ -23,7 +23,6 @@ static const int g_realtime_update_rate = 1; // Seconds
 static bool g_realtime_active;
 static pthread_t g_realtime_thread;
 static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t g_realtime_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mgr_mutex) == 0); }
 static void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mgr_mutex) == 0); }
@@ -51,15 +50,15 @@ static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 		timespec_get(&timeout, TIME_UTC);
 		timeout.tv_sec += g_realtime_update_rate;
 
+		/* Aquire lock. */
+		_aquire_lock();
+
 		/* Wait until we're interrupted or X seconds pass. */
 		int res = 0;
 		while(res != ETIMEDOUT && g_realtime_active) {
-			res = pthread_cond_timedwait(&g_realtime_cond, &g_realtime_cond_mutex, &timeout);
+			res = pthread_cond_timedwait(&g_realtime_cond, &g_reactor_mgr_mutex, &timeout);
 			assert(res == 0 || res == ETIMEDOUT);
 		}
-
-		/* Aquire lock. */
-		_aquire_lock();
 
 		/* Perform update if we're suppose to still be running, otherwise quit. */
 		if(g_realtime_active) {
@@ -72,10 +71,10 @@ static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 			done = true;
 		}
 
-		_release_lock();
-
 		/* Update status. */
 		status_update(&g_state);
+
+		_release_lock();
 	}
 
 	return NULL;

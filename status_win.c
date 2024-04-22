@@ -1,11 +1,9 @@
 #include "status_win.h"
 #include <assert.h>
-#include <errno.h>
 #include <ncurses.h>
 #include <pthread.h>
 #include <string.h>
 #include <time.h>
-#include "common.h"
 #include "console_win.h"
 #include "reactor.h"
 
@@ -14,27 +12,6 @@ static bool g_initialized = false;
 static WINDOW* g_window = NULL;
 
 static pthread_mutex_t g_status_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static status_safety_t g_safety_type = status_safety_invalid;
-
-static const char* const g_safety_enable_text[] = {
-	[status_safety_invalid] = "Invalid (send bug report!)",
-	[status_safety_enable]  = "[ENABLED]",
-	[status_safety_disable] = "<<<DISABLED>>>",
-	[status_safety_blank]   = "",
-};
-
-static const char* const g_safety_active_text[] = {
-	[false] = "Inactive",
-	[true]  = "Active"
-};
-
-static const int g_flash_rate = 1; // Seconds
-static bool g_enable_flash = false;
-static pthread_t g_flash_thread;
-static pthread_cond_t g_flash_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t g_flash_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t g_flash_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	/* Do nothing if rod_depth is invalid. */

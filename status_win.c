@@ -40,6 +40,30 @@ static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	return out;
 }
 
+static void _print_temp_str(const reactor_state_t* state) {
+	/* Print start of temperature line. */
+	mvwprintw(g_window, 3, 1, "reactor temp: ");
+
+	/* Update color if the reactor is getting hot. */
+	if(state->temp >= REACTOR_WARNING_TEMP_2) {
+		wattron(g_window, COLOR_PAIR(1));
+	}
+	else if(state->temp >= REACTOR_WARNING_TEMP) {
+		wattron(g_window, COLOR_PAIR(2));
+	}
+
+	/* Print temp. */
+	wprintw(g_window, "%8.2f", state->temp);
+
+	/* Clear colors. */
+	if(state->temp >= REACTOR_WARNING_TEMP_2) {
+		wattroff(g_window, COLOR_PAIR(1));
+	}
+	else if(state->temp >= REACTOR_WARNING_TEMP) {
+		wattroff(g_window, COLOR_PAIR(2));
+	}
+}
+
 static void _print_safety_str(const reactor_state_t* state, int tick) {
 	static const char* const safety_str[] = {
 		[status_safety_invalid] = "Invalid (send bug report!)",
@@ -118,7 +142,7 @@ void status_end(void) {
 }
 
 void status_update(const reactor_state_t* state, unsigned int tick) {
-	/* Aquire lock, we only want one thread updating this at a time. */
+	/* Acquire lock, we only want one thread updating this at a time. */
 	assert(pthread_mutex_lock(&g_status_mutex) == 0);
 
 	/* Get current time. */
@@ -136,28 +160,8 @@ void status_update(const reactor_state_t* state, unsigned int tick) {
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state->rod_depth, rod_depth_txt, state->coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", g_usermode_str[state->usermode]);
 
-	/* Print start of temperature line. */
-	mvwprintw(g_window, 3, 1, "reactor temp: ");
-	wrefresh(g_window);
-
-	/* Update color if the reactor is getting hot. */
-	if(state->temp >= REACTOR_WARNING_TEMP_2) {
-		wattron(g_window, COLOR_PAIR(1));
-	}
-	else if(state->temp >= REACTOR_WARNING_TEMP) {
-		wattron(g_window, COLOR_PAIR(2));
-	}
-
-	/* Print temp. */
-	wprintw(g_window, "%8.2f", state->temp);
-
-	/* Clear colors. */
-	if(state->temp >= REACTOR_WARNING_TEMP_2) {
-		wattroff(g_window, COLOR_PAIR(1));
-	}
-	else if(state->temp >= REACTOR_WARNING_TEMP) {
-		wattroff(g_window, COLOR_PAIR(2));
-	}
+	/* Print temperature string. */
+	_print_temp_str(state);
 
 	/* Print coolant temp. */
 	mvwprintw(g_window, 3, 34, "coolant_temp: %8.2f", state->coolant_temp);

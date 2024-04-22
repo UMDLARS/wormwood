@@ -11,7 +11,7 @@
 
 static bool g_fault_occurred = false;
 
-static void _error_handler(__attribute__((unused)) int sig) {
+static void _error_handler(int) {
     if(g_fault_occurred) {
         exit(1);
     }
@@ -24,7 +24,7 @@ static void _error_handler(__attribute__((unused)) int sig) {
     fputs("Congrats! You broke it!\n", stderr);
 }
 
-static void _exit_handler(__attribute__((unused)) int sig) {
+static void _exit_handler(int) {
 	/* Close ncurses window. */
 	endwin();
 

@@ -26,19 +26,19 @@ static bool g_realtime_active;
 static pthread_t g_realtime_thread;
 static pthread_cond_t g_realtime_cond = PTHREAD_COND_INITIALIZER;
 
-static void _aquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mgr_mutex) == 0); }
+static void _acquire_lock(void) { assert(pthread_mutex_lock(&g_reactor_mgr_mutex) == 0); }
 static void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mgr_mutex) == 0); }
 
 #define _EXCL_ACCESS(expr) \
 { \
-	_aquire_lock(); \
+	_acquire_lock(); \
 	expr; \
 	_release_lock(); \
 }
 
 #define _EXCL_RETURN(type, var) \
 { \
-	_aquire_lock(); \
+	_acquire_lock(); \
 	type _val = var; \
 	_release_lock(); \
 	return _val; \
@@ -52,8 +52,8 @@ static void* _realtime_reactor_mgr_loop(__attribute__((unused)) void* p) {
 		timespec_get(&timeout, TIME_UTC);
 		timeout.tv_sec += g_realtime_update_rate;
 
-		/* Aquire lock. */
-		_aquire_lock();
+		/* Acquire lock. */
+		_acquire_lock();
 
 		/* Wait until we're interrupted or X seconds pass. */
 		int res = 0;
@@ -96,7 +96,7 @@ static void _start_realtime_update(void) {
 
 static void _end_realtime_update(void) {
 	/* Set flag to disable updates in thread. */
-	_aquire_lock();
+	_acquire_lock();
 	assert(g_realtime_active == true);
 	g_realtime_active = false;
 	_release_lock();
@@ -113,7 +113,7 @@ void reactor_mgr_set_usermode(usermode_t mode) { _EXCL_ACCESS(g_state.usermode =
 
 bool reactor_mgr_get_safety(void) { _EXCL_RETURN(bool, g_state.safety_enabled); }
 void reactor_mgr_set_safety(bool enabled) {
-	_aquire_lock();
+	_acquire_lock();
 
 	/* Set safety enabled. */
 	g_state.safety_enabled = enabled;
@@ -143,7 +143,7 @@ float reactor_mgr_get_temp(void) { _EXCL_RETURN(float, g_state.temp); }
 float reactor_mgr_get_coolant_temp(void) { _EXCL_RETURN(float, g_state.coolant_temp); }
 
 void reactor_mgr_update(void) {
-	_aquire_lock();
+	_acquire_lock();
 
 	/* If we're in norealtime mode, perform an update. */
 	if(g_mode == reactor_mgr_mode_norealtime) {

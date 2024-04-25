@@ -113,11 +113,23 @@ Make the nuclear reactor quit with a failure using each of the four vulnerabilit
 
 ### remediation
 
-Fix the source code so that it still functions normally, but:
- 1. Buffer overflows are no longer possible (i.e., make sure that writes to a buffer cannot use more space than the buffer has)
- 2. Add validation code and/or change the types of the variables so that integer overflow / sign issues do not lead to failures
- 3. Format string vulnerabilities are no longer possible (i.e., don't use user data directly in `printf` statements)
- 4. Fix the off-by-one error that results in the reactor failure.
+Fix the source code so that it still functions normally, but does not demonstrate the bugs that you found.
+
+#### buffer overflows
+ 
+Make sure that buffer overflows (at least the one you found) are no longer possible. To do this, make sure that writes to a buffer cannot use more space than the buffer has. For example, copy only n bytes of the input into the buffer, where n is at least one less than the size of the buffer.
+
+#### integer overflow / sign issues
+
+Add validation code and/or change the types of the variables so that integer overflow / sign issues do not lead to failures. In other words, make sure that values cannot exceed safe ranges, and do not use signed variables where unsigned variables would be more appropriate.
+
+#### format string vulnerabilities
+ 
+Change the code so that format string vulnerabilities are no longer possible (at least the one that you found). To do this, make sure that user data are never used directly as the first argument of a `printf` statement. For example, instead of code like `printf(user_string)`, do something like `printf("The string is %s\n", user_string)`.
+
+#### off-by-one errors
+
+Change the code to fix the off-by-one error(s) you found. This typically requires carefully modifying the conditionals or values. For example, while `>=` might be incorrect, `>` might be correct. Sometimes off-by-one errors happen because people forget that arrays are 0-indexed (i.e., they start at 0 instead of 1). How you fix the bug will depend on the bug you find.
 
 ### answers
 

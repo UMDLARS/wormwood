@@ -1,11 +1,9 @@
 #include "status_win.h"
 #include <assert.h>
-#include <errno.h>
 #include <ncurses.h>
 #include <pthread.h>
 #include <string.h>
 #include <time.h>
-#include "common.h"
 #include "console_win.h"
 #include "reactor.h"
 
@@ -14,16 +12,6 @@ static bool g_initialized = false;
 static WINDOW* g_window = NULL;
 
 static pthread_mutex_t g_status_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static bool g_last_safety_state = false; // default safety is true.
-static bool g_last_safety_active = false;
-
-static const int g_flash_rate = 1; // Seconds
-static bool g_enable_flash = false;
-static pthread_t g_flash_thread;
-static pthread_cond_t g_flash_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t g_flash_cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t g_flash_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	/* Do nothing if rod_depth is invalid. */
@@ -52,96 +40,63 @@ static char *_draw_rod_depth(char* out, unsigned char rod_depth) {
 	return out;
 }
 
-/*
- * 0: Disabled
- * 1: Enabled
- * 2: Blank/Empty
-*/
-static void _set_safety_str(int state, bool active) {
+static void _print_temp_str(const reactor_state_t* state) {
+	/* Print start of temperature line. */
+	mvwprintw(g_window, 3, 1, "reactor temp: ");
+
+	/* Update color if the reactor is getting hot. */
+	if(state->temp >= REACTOR_WARNING_TEMP_2) {
+		wattron(g_window, COLOR_PAIR(1));
+	}
+	else if(state->temp >= REACTOR_WARNING_TEMP) {
+		wattron(g_window, COLOR_PAIR(2));
+	}
+
+	/* Print temp. */
+	wprintw(g_window, "%8.2f", state->temp);
+
+	/* Clear colors. */
+	if(state->temp >= REACTOR_WARNING_TEMP_2) {
+		wattroff(g_window, COLOR_PAIR(1));
+	}
+	else if(state->temp >= REACTOR_WARNING_TEMP) {
+		wattroff(g_window, COLOR_PAIR(2));
+	}
+}
+
+static void _print_safety_str(const reactor_state_t* state, int tick) {
 	static const char* const safety_str[] = {
-		"<<<DISABLED>>>",
-		"[ENABLED]",
-		"",
+		[status_safety_invalid] = "Invalid (send bug report!)",
+		[status_safety_enable]  = "[ENABLED]",
+		[status_safety_disable] = "<<<DISABLED>>>",
+		[status_safety_blank]   = "",
 	};
 	static const char* const safety_active_str[] = {
-		"Inactive",
-		"Active"
+		[false] = "Inactive",
+		[true]  = "Active"
 	};
 
+	/* Determine which safety state we're in. */
+	status_safety_t safety_state = status_safety_invalid;
+	if(state->safety_enabled) {
+		safety_state = status_safety_enable;
+	}
+	else {
+		safety_state = tick & 1 ? status_safety_disable : status_safety_blank;
+	}
+
 	/* Print safety string. */
-	mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", safety_str[state]);
+	mvwprintw(g_window, 7, 1, "SAFETY PROTOCOLS: %14s", safety_str[safety_state]);
 
 	/* If safety is enabled, also print whether safety is active. */
-	if(state == 1) {
+	if(state->safety_enabled) {
 		/* The extra two spaces at the end are a hack to fully overwrite inactive when switching to active */
-		wprintw(g_window, " (%s)  ", safety_active_str[active]);
+		wprintw(g_window, " (%s)  ", safety_active_str[state->safety_active]);
 	}
 	else {
 		/* Write 12 space characters to overwrite active/inactive text. */
 		for(int i = 0; i < 12; i++) waddch(g_window, ' ');
 	}
-
-	/* Update safety text. */
-	wrefresh(g_window);
-}
-
-static void* _safety_flash_loop(__attribute__((unused)) void* p) {
-	struct timespec timeout;
-	bool state = true;
-	bool done = false;
-	while(!done) {
-		/* Get current time and add [g_flash_rate] sec. */
-		timespec_get(&timeout, TIME_UTC);
-		timeout.tv_sec += g_flash_rate;
-
-		/* Wait until we've either been signalled or 1 second passes. */
-		int res = 0;
-		while(res != ETIMEDOUT && g_enable_flash) {
-			res = pthread_cond_timedwait(&g_flash_cond, &g_flash_cond_mutex, &timeout);
-			assert(res == 0 || res == ETIMEDOUT);
-		}
-
-		/* Aquire lock for enable flag. */
-		assert(pthread_mutex_lock(&g_flash_mutex) == 0);
-
-		/* Toggle safety state if we're suppose to still be running, otherwise quit. */
-		if(g_enable_flash) {
-			_set_safety_str(state ? 2 : 0, false);
-			console_refresh_cursor();
-			state = !state;
-		}
-		else {
-			done = true;
-		}
-
-		assert(pthread_mutex_unlock(&g_flash_mutex) == 0);
-	}
-
-	return NULL;
-}
-
-static void _start_safety_flash(void) {
-	if(g_enable_flash) {
-		return;
-	}
-
-	g_enable_flash = true;
-	assert(pthread_create(&g_flash_thread, NULL, _safety_flash_loop, NULL) == 0);
-}
-
-static void _end_safety_flash(void) {
-	if(!g_enable_flash) {
-		return;
-	}
-
-	/* Set flag to disable flash. */
-	assert(pthread_mutex_lock(&g_flash_mutex) == 0);
-	g_enable_flash = false;
-	assert(pthread_mutex_unlock(&g_flash_mutex) == 0);
-
-	/* Try to signal thread. */
-	assert(pthread_cond_signal(&g_flash_cond) == 0);
-	assert(pthread_join(g_flash_thread, NULL) == 0);
 }
 
 static void _draw_horiz_line(int y) {
@@ -179,9 +134,6 @@ void status_end(void) {
 		return;
 	}
 
-	/* End safety flash. */
-	_end_safety_flash();
-
 	/* Destroy our window. */
 	delwin(g_window);
 
@@ -189,8 +141,8 @@ void status_end(void) {
 	g_initialized = false;
 }
 
-void status_update(const reactor_state_t* state) {
-	/* Aquire lock, we only want one thread updating this at a time. */
+void status_update(const reactor_state_t* state, unsigned int tick) {
+	/* Acquire lock, we only want one thread updating this at a time. */
 	assert(pthread_mutex_lock(&g_status_mutex) == 0);
 
 	/* Get current time. */
@@ -208,52 +160,14 @@ void status_update(const reactor_state_t* state) {
 	mvwprintw(g_window, 4, 1, "rod_depth: %2d --[ %s ]--  coolant flow rate: %5.2f", state->rod_depth, rod_depth_txt, state->coolant_flow); 
 	mvwprintw(g_window, 5, 1, "User: %-10s", g_usermode_str[state->usermode]);
 
-	/* Print start of temperature line. */
-	mvwprintw(g_window, 3, 1, "reactor temp: ");
-	wrefresh(g_window);
-
-	/* Update color if the reactor is getting hot. */
-	if(state->temp >= REACTOR_WARNING_TEMP_2) {
-		wattron(g_window, COLOR_PAIR(1));
-	}
-	else if(state->temp >= REACTOR_WARNING_TEMP) {
-		wattron(g_window, COLOR_PAIR(2));
-	}
-
-	/* Print temp. */
-	wprintw(g_window, "%8.2f", state->temp);
-
-	/* Clear colors. */
-	if(state->temp >= REACTOR_WARNING_TEMP_2) {
-		wattroff(g_window, COLOR_PAIR(1));
-	}
-	else if(state->temp >= REACTOR_WARNING_TEMP) {
-		wattroff(g_window, COLOR_PAIR(2));
-	}
+	/* Print temperature string. */
+	_print_temp_str(state);
 
 	/* Print coolant temp. */
 	mvwprintw(g_window, 3, 34, "coolant_temp: %8.2f", state->coolant_temp);
 
-	/* Switch safety string if safety has been enabled or disabled since the last update. */
-	if(state->safety_enabled != g_last_safety_state) {
-		if(state->safety_enabled) {
-			_end_safety_flash();
-			_set_safety_str(1, state->safety_active);
-			g_last_safety_active = state->safety_active;
-		}
-		else {
-			_set_safety_str(0, false);
-			_start_safety_flash();
-		}
-
-		g_last_safety_state = state->safety_enabled;
-	}
-
-	/* Update safety string if safety is enabled and active state has changed. */
-	if(state->safety_enabled && state->safety_active != g_last_safety_active) {
-		_set_safety_str(1, state->safety_active);
-		g_last_safety_active = state->safety_active;
-	}
+	/* Print safety enabled/disabled string. */
+	_print_safety_str(state, tick);
 
 	/* Update window. */
 	wrefresh(g_window);

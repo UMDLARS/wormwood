@@ -9,17 +9,17 @@ pkg_check_modules(NCURSES REQUIRED ncurses)
 
 set(WW_HEADERS
     "common.h"
-    "signal.h"
     "console_win.h"
     "reactor_mgr.h"
     "reactor.h"
     "status_win.h"
+    "wormwood.h"
 )
 
 set(WW_SOURCES
     "common.c"
     "console_win.c"
-    "signal.c"
+    "main.c"
     "reactor_mgr.c"
     "reactor.c"
     "status_win.c"

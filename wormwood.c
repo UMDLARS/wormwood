@@ -8,7 +8,7 @@
 #include "reactor.h"
 #include "reactor_mgr.h"
 
-bool get_string(char *dest) {
+bool get_string(char *dest, int max_len) {
 	char input_buffer[8192];
 	if(!console_read_strn(input_buffer, 8192)) {
 		return false;
@@ -32,18 +32,20 @@ void auth_user(void) {
 	/* Get username and put into user_user. */
 	console_printf("WARNING: UNAUTHORIZED ACCESS IS PUNISHABLE BY LAW!\n");
 	console_printf("Which role (%s or %s)?: ", g_usermode_str[usermode_oper], g_usermode_str[usermode_super]);
-	if(!get_string(user_user)) {
+	if(!get_string(user_user, sizeof(user_user))) {
 		/* Return on failure. The reactor has blown up. */
 		return;
 	}
+	user_user[sizeof(user_user) - 1] = 0;
 
 	console_printf("Password for user '");
 	console_printf(user_user);
 	console_printf("': ");
-	if(!get_string(user_pass)) {
+	if(!get_string(user_pass, sizeof(user_pass))) {
 		/* Return on failure. The reactor has blown up. */
 		return;
 	}
+	user_pass[sizeof(user_pass) - 1] = 0;
 
 	/* Initially set user mode to none. */
 	reactor_mgr_set_usermode(usermode_none);
@@ -117,10 +119,11 @@ void set_rod_depth(void) {
 
 	/* Ask user for rod depth. */
 	console_printf("What should the new rod depth be (0-16)?: ");
-	if(!get_string(answer)) {
+	if(!get_string(answer, sizeof(answer))) {
 		/* Return on failure. The reactor has blown up. */
 		return;
 	}
+	answer[sizeof(answer) - 1] = 0;
 
 	/* Convert rod depth to an integer. */
 	new = atoi(answer);
@@ -142,10 +145,11 @@ void set_flow_rate(void) {
 
 	/* Ask user for flow rate. */
 	console_printf("What should the new flow rate be (0.0-100.0)?: ");
-	if(!get_string(answer)) {
+	if(!get_string(answer, sizeof(answer))) {
 		/* Return on failure. The reactor has blown up. */
 		return;
 	}
+	answer[sizeof(answer) - 1] = 0;
 
 	/* Convert flow rate to a float. */
 	new = atof(answer);

@@ -11,4 +11,4 @@ void confirm_quit(void);
 
 void process_choice(char choice);
 
-void reactor_mgr_status(void);
+void wormwood_loop(void);

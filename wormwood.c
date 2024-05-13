@@ -217,7 +217,7 @@ void process_choice(char choice) {
 	return;
 }
 
-void reactor_mgr_status(void) {
+void wormwood_loop(void) {
 	FUNCNAME
 
 	/* Clear console. */

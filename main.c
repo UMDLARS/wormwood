@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 	srand(time(NULL));
 
 	while (1) {
-		reactor_mgr_status();
+		wormwood_loop();
 		if (exit_reason != exit_reason_none) {
 			break;
 		}

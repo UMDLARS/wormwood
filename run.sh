@@ -14,9 +14,10 @@ then
 	exit 0
 fi
 
-if CMAKE_BUILD_TYPE=Debug cmake -B build -S . && cmake --build ./build
-then
+CMAKE_BUILD_TYPE=Debug
 
+if cmake -B build -S . && cmake --build ./build
+then
 	if ! ./build/wormwood $1
 	then
 		echo

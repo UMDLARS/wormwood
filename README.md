@@ -138,3 +138,6 @@ Write your answers into the associated Canvas quiz item (available in the Canvas
 ## questions / bug reports
 
 Talk to your TA or email [pahp@d.umn.edu](mailto:pahp@d.umn.edu).
+
+## Submission
+Push your source code to a git repo and add your instructor and TA as a collaborator.

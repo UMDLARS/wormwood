@@ -1,4 +1,5 @@
 # wormwood
+### by Zach Kirtz and Peter A. H. Peterson
 It would be a really bad idea to write control software for a nuclear reactor in the C language. What if someone did?
 
 ## introduction

@@ -43,7 +43,7 @@ static void _release_lock(void) { assert(pthread_mutex_unlock(&g_reactor_mgr_mut
 	return _val; \
 }
 
-static void* _manager_thread(void*) {
+static void* _manager_thread(void* arg) {
 	struct timespec timeout;
 	bool done = false;
 	while(!done) {

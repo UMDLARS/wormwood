@@ -11,7 +11,7 @@
 
 static bool g_fault_occurred = false;
 
-static void _error_handler(int) {
+static void _error_handler(int signal) {
     if(g_fault_occurred) {
         exit(1);
     }
@@ -24,7 +24,7 @@ static void _error_handler(int) {
     fputs("Congrats! You broke it!\n", stderr);
 }
 
-static void _exit_handler(int) {
+static void _exit_handler(int signal) {
 	/* Close ncurses window. */
 	endwin();
 

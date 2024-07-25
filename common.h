@@ -4,6 +4,8 @@
 #define DEBUG 0
 #define FUNCNAME if (DEBUG) console_printf("In %s @ line %d...\n", __func__, __LINE__);
 
+#define UNUSED_VAR __attribute__((unused))
+
 typedef enum {
 	exit_reason_none = 0,
 	exit_reason_fail,

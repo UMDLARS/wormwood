@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include "console_win.h"
+#include "common.h"
 #include "reactor.h"
 
 static bool g_initialized = false;
@@ -105,7 +106,7 @@ static void _draw_horiz_line(int y) {
 	mvwaddch(g_window, y, STATUS_WIN_W - 1, ACS_RTEE);
 }
 
-static void _draw_vert_line(int x) { // untested
+static UNUSED_VAR void _draw_vert_line(int x) { // untested
 	mvwaddch(g_window, 0, x, ACS_TTEE);
 	mvwvline(g_window, 1, x, 0, STATUS_WIN_H - 2);
 	mvwaddch(g_window, STATUS_WIN_H - 1, x, ACS_BTEE);
